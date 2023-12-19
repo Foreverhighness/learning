@@ -6,7 +6,7 @@ pub trait TrieNode: Debug + Send + Sync + Any {
     fn children(&self) -> &Children;
     fn children_mut(&mut self) -> &mut Children;
     fn is_value_node(&self) -> bool;
-    fn clone(&self) -> Box<dyn TrieNode>;
+    fn clone_node(&self) -> Box<dyn TrieNode>;
 }
 
 #[derive(Clone, Default)]
@@ -43,8 +43,8 @@ impl TrieNode for TrieNodeWithoutValue {
         self.is_value_node
     }
 
-    fn clone(&self) -> Box<dyn TrieNode> {
-        Box::new(Clone::clone(self))
+    fn clone_node(&self) -> Box<dyn TrieNode> {
+        Box::new(self.clone())
     }
 
     fn children_mut(&mut self) -> &mut Children {
@@ -93,9 +93,9 @@ where
         self.node.is_value_node
     }
 
-    fn clone(&self) -> Box<dyn TrieNode> {
+    fn clone_node(&self) -> Box<dyn TrieNode> {
         Box::new(Self {
-            node: Clone::clone(&self.node),
+            node: self.node.clone(),
             value: Arc::clone(&self.value),
         })
     }

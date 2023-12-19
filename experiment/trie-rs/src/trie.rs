@@ -96,7 +96,7 @@ fn recursion_remove(cur: &Arc<dyn TrieNode>, key: &str) -> Option<Arc<dyn TrieNo
         return None;
     }
 
-    let mut new_root = TrieNode::clone(&**cur);
+    let mut new_root = cur.clone_node();
     if let Some(new_child) = new_child {
         *new_root.children_mut().get_mut(ch).unwrap() = new_child;
     } else {
@@ -124,9 +124,7 @@ where
         value,
     );
 
-    let mut new_root = cur.map_or_else(TrieNodeWithoutValue::new_box, |node| {
-        TrieNode::clone(&**node)
-    });
+    let mut new_root = cur.map_or_else(TrieNodeWithoutValue::new_box, |node| node.clone_node());
     new_root.children_mut().insert(ch, new_child.into());
 
     new_root
