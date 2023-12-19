@@ -1,6 +1,6 @@
 use std::{any::Any, collections::HashMap, fmt::Debug, sync::Arc};
 
-type Children = HashMap<char, Option<Arc<dyn TrieNode>>>;
+type Children = HashMap<char, Arc<dyn TrieNode>>;
 
 pub trait TrieNode: Debug + Send + Sync + Any {
     fn children(&self) -> &Children;

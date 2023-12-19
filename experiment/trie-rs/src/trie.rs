@@ -1,21 +1,9 @@
 use crate::trie_node::{TrieNode, TrieNodeWithValue, TrieNodeWithoutValue};
-use std::{any::Any, fmt::Debug, sync::Arc};
+use std::{any::Any, collections::HashMap, fmt::Debug, sync::Arc};
 
 #[derive(Clone, Default)]
 pub struct Trie {
     root: Option<Arc<dyn TrieNode>>,
-}
-
-fn dfs(node: &Arc<dyn TrieNode>, key: &mut String, f: &mut std::fmt::Formatter<'_>) {
-    if node.is_value_node() {
-        let _ = writeln!(f, "{{{key}: {node:?}}}");
-    }
-
-    for (&k, v) in node.children() {
-        key.push(k);
-        dfs(v.as_ref().unwrap(), key, f);
-        key.pop();
-    }
 }
 
 impl Debug for Trie {
@@ -23,9 +11,23 @@ impl Debug for Trie {
         if self.root.is_none() {
             return f.debug_struct("Trie").field("root", &"None").finish();
         }
+
+        fn dfs(node: &Arc<dyn TrieNode>, key: &mut String, map: &mut HashMap<String, String>) {
+            if node.is_value_node() {
+                map.insert(key.clone(), format!("{node:?}"));
+            }
+
+            for (&k, v) in node.children() {
+                key.push(k);
+                dfs(v, key, map);
+                key.pop();
+            }
+        }
+
+        let mut map = HashMap::new();
         let mut key = String::new();
-        dfs(self.root.as_ref().unwrap(), &mut key, f);
-        Ok(())
+        dfs(self.root.as_ref().unwrap(), &mut key, &mut map);
+        f.debug_map().entries(map).finish()
     }
 }
 
@@ -41,7 +43,7 @@ impl Trie {
     pub fn get<T: 'static>(&self, key: &str) -> Option<&T> {
         let mut cur = self.root.as_ref()?;
         for ch in key.chars() {
-            cur = cur.children().get(&ch)?.as_ref().expect("invalid child");
+            cur = cur.children().get(&ch)?;
         }
 
         if cur.is_value_node() {
@@ -56,9 +58,8 @@ impl Trie {
     where
         T: Debug + Send + Sync + 'static,
     {
-        let mut ret = Self::with_root(self.root.clone());
-        recursion_put(&mut ret.root, key, value);
-        ret
+        let new_root = recursion_put(self.root.as_ref(), key, value);
+        Self::with_root(Some(new_root.into()))
     }
 
     pub fn remove(&self, key: &str) -> Self {
@@ -78,7 +79,7 @@ impl Trie {
             let Some(nxt) = cur.children().get(&ch) else {
                 return false;
             };
-            cur = nxt.as_ref().unwrap();
+            cur = nxt;
         }
         cur.is_value_node()
     }
@@ -93,44 +94,44 @@ fn recursion_remove(cur: &Arc<dyn TrieNode>, key: &str) -> Option<Arc<dyn TrieNo
     }
 
     let ch = &key.chars().next().unwrap();
-    let new_child = recursion_remove(cur.children()[ch].as_ref().unwrap(), &key[1..]);
+    let new_child = recursion_remove(&cur.children()[ch], &key[1..]);
 
     if new_child.is_none() && cur.children().len() == 1 && !cur.is_value_node() {
         return None;
     }
 
     let mut new_root = TrieNode::clone(&**cur);
-    if new_child.is_none() {
-        new_root.children_mut().remove(ch).unwrap();
-    } else {
+    if let Some(new_child) = new_child {
         *new_root.children_mut().get_mut(ch).unwrap() = new_child;
+    } else {
+        new_root.children_mut().remove(ch).unwrap();
     }
     Some(new_root.into())
 }
 
-fn recursion_put<T>(cur: &mut Option<Arc<dyn TrieNode>>, key: &str, value: T)
+fn recursion_put<T>(cur: Option<&Arc<dyn TrieNode>>, key: &str, value: T) -> Box<dyn TrieNode>
 where
     T: Debug + Send + Sync + 'static,
 {
     if key.is_empty() {
-        let node = {
-            if let &mut Some(ref cur) = cur {
-                TrieNodeWithValue::with_children(cur.children().clone(), Arc::new(value))
-            } else {
-                TrieNodeWithValue::new_box(Arc::new(value))
-            }
+        if let Some(cur) = cur {
+            return TrieNodeWithValue::with_children(cur.children().clone(), Arc::new(value));
+        } else {
+            return TrieNodeWithValue::new_box(Arc::new(value));
         };
-        *cur = Some(node.into());
-        return;
     }
 
     let ch = key.chars().next().unwrap();
+    let new_child = recursion_put(
+        cur.and_then(|node| node.children().get(&ch)),
+        &key[1..],
+        value,
+    );
 
-    let mut copy = cur.as_ref().map_or(TrieNodeWithoutValue::new_box(), |cur| {
-        TrieNode::clone(&**cur)
+    let mut new_root = cur.map_or_else(TrieNodeWithoutValue::new_box, |node| {
+        TrieNode::clone(&**node)
     });
+    new_root.children_mut().insert(ch, new_child.into());
 
-    recursion_put(copy.children_mut().entry(ch).or_default(), &key[1..], value);
-
-    *cur = Some(copy.into());
+    new_root
 }
