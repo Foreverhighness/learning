@@ -1,5 +1,5 @@
 use crate::trie_node::{TrieNode, TrieNodeWithValue, TrieNodeWithoutValue};
-use std::{any::Any, collections::HashMap, fmt::Debug, sync::Arc};
+use std::{any::Any, fmt::Debug, sync::Arc};
 
 #[derive(Clone, Default)]
 pub struct Trie {
@@ -12,22 +12,22 @@ impl Debug for Trie {
             return f.debug_struct("Trie").field("root", &"None").finish();
         }
 
-        fn dfs(node: &Arc<dyn TrieNode>, key: &mut String, map: &mut HashMap<String, String>) {
+        fn dfs(node: &Arc<dyn TrieNode>, key: &mut String, f: &mut std::fmt::DebugMap<'_, '_>) {
             if node.is_value_node() {
-                map.insert(key.clone(), format!("{node:?}"));
+                f.entry(key, node);
             }
 
             for (&k, v) in node.children() {
                 key.push(k);
-                dfs(v, key, map);
+                dfs(v, key, f);
                 key.pop();
             }
         }
 
-        let mut map = HashMap::new();
         let mut key = String::new();
-        dfs(self.root.as_ref().unwrap(), &mut key, &mut map);
-        f.debug_map().entries(map).finish()
+        let f = &mut f.debug_map();
+        dfs(self.root.as_ref().unwrap(), &mut key, f);
+        f.finish()
     }
 }
 
