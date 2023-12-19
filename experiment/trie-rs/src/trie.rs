@@ -41,10 +41,9 @@ impl Trie {
     }
 
     pub fn get<T: 'static>(&self, key: &str) -> Option<&T> {
-        let mut cur = self.root.as_ref()?;
-        for ch in key.chars() {
-            cur = cur.children().get(&ch)?;
-        }
+        let cur = key
+            .chars()
+            .try_fold(self.root.as_ref()?, |cur, ch| cur.children().get(&ch))?;
 
         if cur.is_value_node() {
             let node = (cur.as_ref() as &dyn Any).downcast_ref::<TrieNodeWithValue<T>>()?;
@@ -72,16 +71,13 @@ impl Trie {
     }
 
     fn contains_key(&self, key: &str) -> bool {
-        let Some(mut cur) = self.root.as_ref() else {
-            return false;
-        };
-        for ch in key.chars() {
-            let Some(nxt) = cur.children().get(&ch) else {
-                return false;
-            };
-            cur = nxt;
-        }
-        cur.is_value_node()
+        self.root
+            .as_ref()
+            .and_then(|init| {
+                key.chars()
+                    .try_fold(init, |cur, ch| cur.children().get(&ch))
+            })
+            .map_or(false, |cur| cur.is_value_node())
     }
 }
 
