@@ -1,4 +1,4 @@
-use crate::trie_node::{TrieNode, TrieNodeWithValue, TrieNodeWithoutValue};
+use crate::trie_node::{NodeWithValue, NodeWithoutValue, TrieNode};
 use std::{any::Any, fmt::Debug, sync::Arc};
 
 #[derive(Clone, Default)]
@@ -6,22 +6,22 @@ pub struct Trie {
     root: Option<Arc<dyn TrieNode>>,
 }
 
+fn dfs(node: &Arc<dyn TrieNode>, key: &mut String, f: &mut std::fmt::DebugMap<'_, '_>) {
+    if node.is_value_node() {
+        f.entry(key, node);
+    }
+
+    for (&k, v) in node.children() {
+        key.push(k);
+        dfs(v, key, f);
+        key.pop();
+    }
+}
+
 impl Debug for Trie {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.root.is_none() {
             return f.debug_struct("Trie").field("root", &"None").finish();
-        }
-
-        fn dfs(node: &Arc<dyn TrieNode>, key: &mut String, f: &mut std::fmt::DebugMap<'_, '_>) {
-            if node.is_value_node() {
-                f.entry(key, node);
-            }
-
-            for (&k, v) in node.children() {
-                key.push(k);
-                dfs(v, key, f);
-                key.pop();
-            }
         }
 
         let mut key = String::new();
@@ -37,7 +37,7 @@ impl Trie {
     }
 
     pub fn new() -> Self {
-        Default::default()
+        Trie::default()
     }
 
     pub fn get<T: 'static>(&self, key: &str) -> Option<&T> {
@@ -46,7 +46,7 @@ impl Trie {
             .try_fold(self.root.as_ref()?, |cur, ch| cur.children().get(&ch))?;
 
         if cur.is_value_node() {
-            let node = (cur.as_ref() as &dyn Any).downcast_ref::<TrieNodeWithValue<T>>()?;
+            let node = (cur.as_ref() as &dyn Any).downcast_ref::<NodeWithValue<T>>()?;
             Some(&node.value)
         } else {
             None
@@ -81,12 +81,13 @@ impl Trie {
     }
 }
 
+#[allow(clippy::indexing_slicing)]
 fn recursion_remove(cur: &Arc<dyn TrieNode>, key: &str) -> Option<Arc<dyn TrieNode>> {
     if key.is_empty() {
         debug_assert!(cur.is_value_node());
         let has_remain_children = !cur.children().is_empty();
         return has_remain_children
-            .then(|| TrieNodeWithoutValue::with_children(cur.children().clone()).into());
+            .then(|| NodeWithoutValue::with_children(cur.children().clone()).into());
     }
 
     let ch = &key.chars().next().unwrap();
@@ -105,16 +106,16 @@ fn recursion_remove(cur: &Arc<dyn TrieNode>, key: &str) -> Option<Arc<dyn TrieNo
     Some(new_root.into())
 }
 
+#[allow(clippy::indexing_slicing)]
 fn recursion_put<T>(cur: Option<&Arc<dyn TrieNode>>, key: &str, value: T) -> Box<dyn TrieNode>
 where
     T: Debug + Send + Sync + 'static,
 {
     if key.is_empty() {
         if let Some(cur) = cur {
-            return TrieNodeWithValue::with_children(cur.children().clone(), Arc::new(value));
-        } else {
-            return TrieNodeWithValue::new_box(Arc::new(value));
-        };
+            return NodeWithValue::with_children(cur.children().clone(), Arc::new(value));
+        }
+        return NodeWithValue::new_box(Arc::new(value));
     }
 
     let ch = key.chars().next().unwrap();
@@ -124,7 +125,7 @@ where
         value,
     );
 
-    let mut new_root = cur.map_or_else(TrieNodeWithoutValue::new_box, |node| node.clone_node());
+    let mut new_root = cur.map_or_else(NodeWithoutValue::new_box, |node| node.clone_node());
     new_root.children_mut().insert(ch, new_child.into());
 
     new_root

@@ -3,18 +3,19 @@ mod trie_node;
 
 use trie::Trie;
 
+#[allow(clippy::cognitive_complexity)]
 fn main() {
     {
         let mut trie = Trie::new();
 
         trie = trie.put::<i32>("test-int", 233);
-        dbg!(&trie);
+        println!("{trie:?}");
         trie = trie.put::<i32>("test-int2", 2_333_333);
-        dbg!(&trie);
+        println!("{trie:?}");
         trie = trie.put::<String>("test-string", String::from("test"));
-        dbg!(&trie);
+        println!("{trie:?}");
         trie = trie.put::<&str>("", "empty-key");
-        dbg!(&trie);
+        println!("{trie:?}");
 
         debug_assert_eq!(trie.get::<i32>("test-int"), Some(&233));
         debug_assert_eq!(trie.get::<i32>("test-int2"), Some(&2_333_333));
@@ -30,8 +31,8 @@ fn main() {
         trie = trie.put::<u32>("test", 233);
         debug_assert_eq!(trie.get::<u32>("test"), Some(&233));
         // Put something else
-        trie = trie.put::<u32>("test", 23333333);
-        debug_assert_eq!(trie.get::<u32>("test"), Some(&23333333));
+        trie = trie.put::<u32>("test", 23_333_333);
+        debug_assert_eq!(trie.get::<u32>("test"), Some(&23_333_333));
         // Overwrite with another type
         trie = trie.put::<&str>("test", "23333333");
         debug_assert_eq!(trie.get::<&str>("test"), Some(&"23333333"));
@@ -75,52 +76,52 @@ fn main() {
     {
         let mut trie = Trie::new();
         for i in 0..23333 {
-            let key = format!("{:#05}", i);
-            let value = format!("value-{:#08}", i);
+            let key = format!("{i:#05}");
+            let value = format!("value-{i:#08}");
             trie = trie.put::<String>(&key, value);
         }
         let trie_full = trie.clone();
         for i in (0..23333).step_by(2) {
-            let key = format!("{:#05}", i);
-            let value = format!("new-value-{:#08}", i);
+            let key = format!("{i:#05}");
+            let value = format!("new-value-{i:#08}");
             trie = trie.put::<String>(&key, value);
         }
         let trie_override = trie.clone();
         for i in (0..23333).step_by(3) {
-            let key = format!("{:#05}", i);
+            let key = format!("{i:#05}");
             trie = trie.remove(&key);
         }
         let trie_final = trie.clone();
 
         // verify trie_full
         for i in 0..23333 {
-            let key = format!("{:#05}", i);
-            let value = format!("value-{:#08}", i);
+            let key = format!("{i:#05}");
+            let value = format!("value-{i:#08}");
             debug_assert_eq!(trie_full.get::<String>(&key), Some(&value));
         }
 
         // verify trie_override
         for i in 0..23333 {
-            let key = format!("{:#05}", i);
+            let key = format!("{i:#05}");
             if i % 2 == 0 {
-                let value = format!("new-value-{:#08}", i);
+                let value = format!("new-value-{i:#08}");
                 debug_assert_eq!(trie_override.get::<String>(&key), Some(&value));
             } else {
-                let value = format!("value-{:#08}", i);
+                let value = format!("value-{i:#08}");
                 debug_assert_eq!(trie_override.get::<String>(&key), Some(&value));
             }
         }
 
         // verify final trie
         for i in 0..23333 {
-            let key = format!("{:#05}", i);
+            let key = format!("{i:#05}");
             if i % 3 == 0 {
                 debug_assert_eq!(trie_final.get::<String>(&key), None);
             } else if i % 2 == 0 {
-                let value = format!("new-value-{:#08}", i);
+                let value = format!("new-value-{i:#08}");
                 debug_assert_eq!(trie_final.get::<String>(&key), Some(&value));
             } else {
-                let value = format!("value-{:#08}", i);
+                let value = format!("value-{i:#08}");
                 debug_assert_eq!(trie_final.get::<String>(&key), Some(&value));
             }
         }

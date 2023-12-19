@@ -10,20 +10,20 @@ pub trait TrieNode: Debug + Send + Sync + Any {
 }
 
 #[derive(Clone, Default)]
-pub struct TrieNodeWithoutValue {
+pub struct NodeWithoutValue {
     children: Children,
     is_value_node: bool,
 }
 
-impl Debug for TrieNodeWithoutValue {
+impl Debug for NodeWithoutValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "")
     }
 }
 
-impl TrieNodeWithoutValue {
+impl NodeWithoutValue {
     pub fn new_box() -> Box<dyn TrieNode> {
-        Box::<TrieNodeWithoutValue>::default()
+        Box::<NodeWithoutValue>::default()
     }
 
     pub fn with_children(children: Children) -> Box<dyn TrieNode> {
@@ -34,7 +34,7 @@ impl TrieNodeWithoutValue {
     }
 }
 
-impl TrieNode for TrieNodeWithoutValue {
+impl TrieNode for NodeWithoutValue {
     fn children(&self) -> &Children {
         &self.children
     }
@@ -53,27 +53,27 @@ impl TrieNode for TrieNodeWithoutValue {
 }
 
 #[derive(Default)]
-pub struct TrieNodeWithValue<T> {
-    node: TrieNodeWithoutValue,
+pub struct NodeWithValue<T> {
+    node: NodeWithoutValue,
     pub value: Arc<T>,
 }
 
-impl<T: Debug> Debug for TrieNodeWithValue<T> {
+impl<T: Debug> Debug for NodeWithValue<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.value)
     }
 }
 
-impl<T> TrieNodeWithValue<T>
+impl<T> NodeWithValue<T>
 where
     T: Debug + Send + Sync + 'static,
 {
     pub fn new_box(value: Arc<T>) -> Box<dyn TrieNode> {
-        Self::with_children(Default::default(), value)
+        Self::with_children(HashMap::default(), value)
     }
 
     pub fn with_children(children: Children, value: Arc<T>) -> Box<dyn TrieNode> {
-        let node = TrieNodeWithoutValue {
+        let node = NodeWithoutValue {
             is_value_node: true,
             children,
         };
@@ -81,7 +81,7 @@ where
     }
 }
 
-impl<T> TrieNode for TrieNodeWithValue<T>
+impl<T> TrieNode for NodeWithValue<T>
 where
     T: Debug + Send + Sync + 'static,
 {

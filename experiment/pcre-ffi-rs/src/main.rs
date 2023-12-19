@@ -49,23 +49,25 @@ fn send_result(result: String) {
     let socket = CELL.get_or_init(|| UdpSocket::bind("127.0.0.1:34254").unwrap());
     let port = 34255;
     let dst = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
-    println!("send to {:?}: {}", dst, result);
+    println!("send to {dst:?}: {result}");
     socket.send_to(&result.into_bytes(), dst).unwrap();
 }
+
+const NULL: *mut c_void = std::ptr::null::<c_void>().cast_mut();
+const PCRE2_ZERO_TERMINATED: PCRE2_SIZE = !0;
+use std::io::BufRead;
 
 fn main() {
     let filename = "input.txt";
 
-    const NULL: *mut c_void = std::ptr::null::<c_void>() as *mut c_void;
     unsafe {
         let re = {
             let pattern = CString::new(r"\d{4}([^\d\s]{3,11}).").unwrap();
-            println!("pattern: {:?}", pattern);
-            const PCRE2_ZERO_TERMINATED: PCRE2_SIZE = !0;
+            println!("pattern: {pattern:?}");
             let mut errorcode = 0;
             let mut erroroffset: usize = 0;
             pcre2_compile_8(
-                pattern.as_ptr() as _,
+                pattern.as_ptr().cast(),
                 PCRE2_ZERO_TERMINATED,
                 0,
                 &mut errorcode as _,
@@ -75,27 +77,29 @@ fn main() {
         };
         debug_assert_ne!(re, NULL);
 
-        use std::io::BufRead;
         let f = std::io::BufReader::new(std::fs::File::open(filename).unwrap());
         for (line, subject) in f.lines().enumerate() {
             let subject = subject.unwrap();
             let length = subject.len();
             let subject = CString::new(subject.into_bytes()).unwrap();
-            println!("{} subject: {:?}", line, subject);
+            println!("{line} subject: {subject:?}");
 
             let match_data = pcre2_match_data_create_from_pattern_8(re, NULL);
-            let rc = pcre2_match_8(re, subject.as_ptr() as _, length, 0, 0, match_data, NULL);
+            let rc = pcre2_match_8(re, subject.as_ptr().cast(), length, 0, 0, match_data, NULL);
             if rc >= 0 {
                 debug_assert_ne!(rc, 0);
-                let ovector = pcre2_get_ovector_pointer_8(match_data);
-                let ovector = std::slice::from_raw_parts(ovector, rc as usize * 2);
-                println!("Match succeeded at offset {:?}", ovector[0]);
+                let rc: usize = rc.try_into().unwrap();
 
-                let substring_start = subject.as_ptr().add(ovector[2]) as *const u8;
-                let substring_length = ovector[3] - ovector[2];
+                let ovector = pcre2_get_ovector_pointer_8(match_data);
+                let ovector = std::slice::from_raw_parts(ovector, rc * 2);
+                debug_assert!(ovector.len() >= 4);
+                println!("Match succeeded at offset {:?}", ovector.get_unchecked(0));
+
+                let substring_start = subject.as_ptr().add(*ovector.get_unchecked(2)).cast();
+                let substring_length = ovector.get_unchecked(3) - ovector.get_unchecked(2);
                 let slice = std::slice::from_raw_parts(substring_start, substring_length);
                 let result = String::from_utf8_unchecked(slice.to_owned());
-                println!("found: {}", result);
+                println!("found: {result}");
                 send_result(result);
             }
             pcre2_match_data_free_8(match_data);
