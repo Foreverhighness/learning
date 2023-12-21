@@ -63,7 +63,7 @@ impl Trie {
 
     pub fn remove(&self, key: &str) -> Self {
         let new_root = if self.contains_key(key) {
-            recursion_remove(self.root.as_ref().unwrap(), key)
+            recursion_remove(self.root.as_ref().unwrap().as_ref(), key).map(Into::into)
         } else {
             self.root.clone()
         };
@@ -82,16 +82,17 @@ impl Trie {
 }
 
 #[allow(clippy::indexing_slicing)]
-fn recursion_remove(cur: &Arc<dyn TrieNode>, key: &str) -> Option<Arc<dyn TrieNode>> {
+fn recursion_remove(cur: &dyn TrieNode, key: &str) -> Option<Box<dyn TrieNode>> {
     if key.is_empty() {
         debug_assert!(cur.is_value_node());
         let has_remain_children = !cur.children().is_empty();
         return has_remain_children
-            .then(|| NodeWithoutValue::with_children(cur.children().clone()).into());
+            .then(|| NodeWithoutValue::with_children(cur.children().clone()));
     }
 
-    let ch = &key.chars().next().unwrap();
-    let new_child = recursion_remove(&cur.children()[ch], &key[1..]);
+    let mut chars = key.chars();
+    let ch = &chars.next().unwrap();
+    let new_child = recursion_remove(cur.children()[ch].as_ref(), chars.as_str());
 
     if new_child.is_none() && cur.children().len() == 1 && !cur.is_value_node() {
         return None;
@@ -99,14 +100,13 @@ fn recursion_remove(cur: &Arc<dyn TrieNode>, key: &str) -> Option<Arc<dyn TrieNo
 
     let mut new_root = cur.clone_node();
     if let Some(new_child) = new_child {
-        *new_root.children_mut().get_mut(ch).unwrap() = new_child;
+        *new_root.children_mut().get_mut(ch).unwrap() = new_child.into();
     } else {
         new_root.children_mut().remove(ch).unwrap();
     }
-    Some(new_root.into())
+    Some(new_root)
 }
 
-#[allow(clippy::indexing_slicing)]
 fn recursion_put<T>(cur: Option<&Arc<dyn TrieNode>>, key: &str, value: T) -> Box<dyn TrieNode>
 where
     T: Debug + Send + Sync + 'static,
@@ -118,10 +118,11 @@ where
         return NodeWithValue::new_box(Arc::new(value));
     }
 
-    let ch = key.chars().next().unwrap();
+    let mut chars = key.chars();
+    let ch = chars.next().unwrap();
     let new_child = recursion_put(
         cur.and_then(|node| node.children().get(&ch)),
-        &key[1..],
+        chars.as_str(),
         value,
     );
 

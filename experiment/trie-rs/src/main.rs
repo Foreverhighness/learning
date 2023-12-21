@@ -3,7 +3,7 @@ mod trie_node;
 
 use trie::Trie;
 
-#[allow(clippy::cognitive_complexity)]
+#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 fn main() {
     {
         let mut trie = Trie::new();
@@ -24,6 +24,24 @@ fn main() {
             Some(&String::from("test"))
         );
         debug_assert_eq!(trie.get::<&str>(""), Some(&"empty-key"));
+    }
+
+    {
+        let mut trie = Trie::new();
+
+        trie = trie.put::<i32>("中文整数", 233);
+        println!("{trie:?}");
+        trie = trie.put::<i32>("中文整数二", 2_333_333);
+        println!("{trie:?}");
+        trie = trie.put::<String>("测试", String::from("test"));
+        println!("{trie:?}");
+        trie = trie.put::<&str>("😈", "emoji");
+        println!("{trie:?}");
+
+        debug_assert_eq!(trie.get::<i32>("中文整数"), Some(&233));
+        debug_assert_eq!(trie.get::<i32>("中文整数二"), Some(&2_333_333));
+        debug_assert_eq!(trie.get::<String>("测试"), Some(&String::from("test")));
+        debug_assert_eq!(trie.get::<&str>("😈"), Some(&"emoji"));
     }
 
     {
