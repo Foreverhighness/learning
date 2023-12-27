@@ -64,9 +64,12 @@ impl<T: Debug> Debug for NodeWithValue<T> {
     }
 }
 
+pub trait NodeValueMarkerTrait: Debug + Send + Sync + 'static {}
+impl<T> NodeValueMarkerTrait for T where T: Debug + Send + Sync + 'static {}
+
 impl<T> NodeWithValue<T>
 where
-    T: Debug + Send + Sync + 'static,
+    T: NodeValueMarkerTrait,
 {
     pub fn new_box(value: Arc<T>) -> Box<dyn TrieNode> {
         Self::with_children(HashMap::default(), value)
@@ -81,10 +84,7 @@ where
     }
 }
 
-impl<T> TrieNode for NodeWithValue<T>
-where
-    T: Debug + Send + Sync + 'static,
-{
+impl<T: NodeValueMarkerTrait> TrieNode for NodeWithValue<T> {
     fn children(&self) -> &Children {
         &self.node.children
     }

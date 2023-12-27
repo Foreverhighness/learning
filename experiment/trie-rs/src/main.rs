@@ -1,7 +1,14 @@
 mod trie;
 mod trie_node;
+mod trie_store;
+
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 use trie::Trie;
+use trie_store::TrieStore;
 
 #[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 fn main() {
@@ -142,6 +149,69 @@ fn main() {
                 let value = format!("value-{i:#08}");
                 debug_assert_eq!(trie_final.get::<String>(&key), Some(&value));
             }
+        }
+    }
+
+    {
+        let store = &TrieStore::new();
+        let keys_per_thread = 10_000;
+
+        std::thread::scope(move |s| {
+            let mut threads = Vec::new();
+
+            for tid in 0..4 {
+                let handle = s.spawn(move || {
+                    for i in 0..keys_per_thread {
+                        let key = format!("{:#05}", i * 4 + tid);
+                        let value = format!("value-{:#08}", i * 4 + tid);
+                        store.put::<String>(&key, value);
+                    }
+                    for i in 0..keys_per_thread {
+                        let key = format!("{:#05}", i * 4 + tid);
+                        store.remove(&key);
+                    }
+                    for i in 0..keys_per_thread {
+                        let key = format!("{:#05}", i * 4 + tid);
+                        let value = format!("new-value-{:#08}", i * 4 + tid);
+                        store.put::<String>(&key, value);
+                    }
+                });
+                threads.push(handle);
+            }
+
+            let mut read_threads = Vec::new();
+            let stop = Arc::new(AtomicBool::new(false));
+
+            for tid in 0..4 {
+                let stop = Arc::clone(&stop);
+                let handle = s.spawn(move || {
+                    let mut i = 0;
+                    while !stop.load(Ordering::SeqCst) {
+                        let key = format!("{:#05}", i * 4 + tid);
+                        store.get::<String>(&key);
+                        i = (i + 1) % keys_per_thread;
+                    }
+                });
+                read_threads.push(handle);
+            }
+
+            for t in threads {
+                let _ = t.join();
+            }
+
+            stop.store(true, Ordering::SeqCst);
+
+            for t in read_threads {
+                let _ = t.join();
+            }
+        });
+
+        // verify final trie
+        for i in 0..(4 * keys_per_thread) {
+            let key = format!("{i:#05}");
+            let value = format!("new-value-{i:#08}");
+            let guard = store.get::<String>(&key).unwrap();
+            debug_assert_eq!(*guard, value);
         }
     }
 }

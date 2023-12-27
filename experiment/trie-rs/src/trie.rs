@@ -1,4 +1,4 @@
-use crate::trie_node::{NodeWithValue, NodeWithoutValue, TrieNode};
+use crate::trie_node::{NodeValueMarkerTrait, NodeWithValue, NodeWithoutValue, TrieNode};
 use std::{any::Any, fmt::Debug, sync::Arc};
 
 #[derive(Clone, Default)]
@@ -55,7 +55,7 @@ impl Trie {
 
     pub fn put<T>(&self, key: &str, value: T) -> Self
     where
-        T: Debug + Send + Sync + 'static,
+        T: NodeValueMarkerTrait,
     {
         let new_root = recursion_put(self.root.as_ref(), key, value);
         Self::with_root(Some(new_root.into()))
@@ -109,7 +109,7 @@ fn recursion_remove(cur: &dyn TrieNode, key: &str) -> Option<Box<dyn TrieNode>> 
 
 fn recursion_put<T>(cur: Option<&Arc<dyn TrieNode>>, key: &str, value: T) -> Box<dyn TrieNode>
 where
-    T: Debug + Send + Sync + 'static,
+    T: NodeValueMarkerTrait,
 {
     if key.is_empty() {
         if let Some(cur) = cur {
