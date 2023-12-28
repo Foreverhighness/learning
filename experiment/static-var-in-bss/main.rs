@@ -1,4 +1,3 @@
-#![feature(const_maybe_uninit_zeroed)]
 use std::mem::MaybeUninit;
 
 static mut S_VAR_1: u32 = 1;
@@ -40,4 +39,3 @@ fn foo() {
 fn main() {
     foo();
 }
-
