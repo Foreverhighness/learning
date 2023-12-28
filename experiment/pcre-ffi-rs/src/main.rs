@@ -53,7 +53,7 @@ fn send_result(result: String) {
     socket.send_to(&result.into_bytes(), dst).unwrap();
 }
 
-const NULL: *mut c_void = std::ptr::null::<c_void>().cast_mut();
+const NULL: *mut c_void = std::ptr::null_mut();
 const PCRE2_ZERO_TERMINATED: PCRE2_SIZE = !0;
 use std::io::BufRead;
 
