@@ -4,13 +4,14 @@ CXXFLAGS = -m64 -std=c++20 -Og -g -Wall -Werror
 BUILD_DIR = build
 
 test: $(BUILD_DIR)/main
+	./gen.py -r
 	$(BUILD_DIR)/main
-	./bin2txt.py $(BUILD_DIR)/0-0.run
+	bash -c 'diff <(./bin2txt.py $(BUILD_DIR)/1-0.run) <(./bin2txt.py $(BUILD_DIR)/{0..31}.bin | sort -n)'
 
 run: $(BUILD_DIR)/main
 	./gen.py -r
 	$(BUILD_DIR)/main
-	bash -c 'diff <(./bin2txt.py $(BUILD_DIR)/result.out) <(./bin2txt.py $(BUILD_DIR)/*.bin | sort -n) | head -n 10'
+	bash -c 'diff <(./bin2txt.py $(BUILD_DIR)/result.out) <(./bin2txt.py $(BUILD_DIR)/*.bin | sort -n)'
 
 $(BUILD_DIR)/main: main.cpp
 	mkdir -p $(BUILD_DIR)

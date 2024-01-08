@@ -19,7 +19,6 @@ def parse_cmd() -> Tuple[int, bool]:
 
     num_file = args.num_file
     init_with_random = args.random
-    assert (1000 <= num_file <= 2000)
     return num_file, init_with_random
 
 
@@ -38,7 +37,7 @@ def output_data(data: List[int], num_file: int):
         os.makedirs(BUILD_DIR)
 
     i = 0
-    for filename in range(1, num_file + 1):
+    for filename in range(num_file):
         with open(f'{BUILD_DIR}/{filename}.bin', 'wb') as bin_file:
             for _ in range(NUMBERS):
                 bin_file.write(data[i].to_bytes(4, 'little'))

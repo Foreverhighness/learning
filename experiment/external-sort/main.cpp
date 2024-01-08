@@ -3,18 +3,18 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
-#include <numeric>
+#include <memory>
+#include <optional>
 #include <queue>
 #include <random>
-#include <sstream>
-#include <sys/mman.h>
 
 using elem_t = uint32_t;
 
 constexpr char const *BUILD_DIR = "build";
 constexpr int BATCH_SIZE = 32;
-constexpr int NUM_FILES = 1024;
+constexpr int NUM_FILES = 1000;
 constexpr int NUMBERS = 1024;
+constexpr int BLOCK_SIZE = NUMBERS * sizeof(elem_t);
 
 template <typename It> void kmerge(It first, It last, std::ostream &os) {
   using PI = typename It::value_type;
@@ -89,13 +89,51 @@ template <typename It> void kmerge(It first, It last, std::ostream &os) {
 
 static auto get_run_file_name(const int round, const int run_number)
     -> std::string {
-  std::ostringstream oss;
-  oss << BUILD_DIR << '/' << round << '-' << run_number << ".run";
-  return oss.str();
+  return std::string{BUILD_DIR} + '/' + std::to_string(round) + '-' +
+         std::to_string(run_number) + ".run";
+}
+
+[[maybe_unused]] static void output(elem_t *addr, int len) {
+  for (int i = 0; i != len; ++i) {
+    std::cout << addr[i] << " \n"[i + 1 == len];
+  }
+}
+
+static void read_file_into_buffer(const int fileno, elem_t *buf) {
+  const std::string filename{std::string{BUILD_DIR} + '/' +
+                             std::to_string(fileno) + ".bin"};
+
+  std::ifstream ifs{filename, std::ios::in | std::ios::binary};
+  ifs.read(reinterpret_cast<char *>(buf), BLOCK_SIZE);
+}
+
+static void write_buffer_into_run(const elem_t *buf, const int len,
+                                  const int round, const int run_number) {
+  const auto filename = get_run_file_name(round, run_number);
+  std::ofstream ofs{filename, std::ios::out | std::ios::binary};
+  ofs.write(reinterpret_cast<const char *>(buf), len * sizeof(elem_t));
 }
 
 int main() {
-  std::ofstream ofs{get_run_file_name(0, 0), std::ios::binary};
-  test(ofs);
+  auto memory = std::make_unique<elem_t[]>(BATCH_SIZE * NUMBERS);
+  int round = 1;
+  int num_files = NUM_FILES;
+  int runs = (num_files + BATCH_SIZE - 1) / BATCH_SIZE;
+
+  // sort phase
+  int fileno = 0;
+  for (int run_number = 0; run_number != runs; ++run_number) {
+
+    auto cur = memory.get();
+    for (int i = 0; i != BATCH_SIZE && fileno != num_files; ++i, ++fileno) {
+      read_file_into_buffer(fileno, cur);
+      cur += NUMBERS;
+    }
+
+    const auto begin = memory.get(), end = cur;
+    std::sort(begin, end);
+    write_buffer_into_run(begin, end - begin, round, run_number);
+  }
+
   return 0;
 }
