@@ -8,6 +8,8 @@
 #include <queue>
 #include <random>
 
+namespace fs = std::filesystem;
+
 using elem_t = uint32_t;
 
 constexpr int BATCH_SIZE = 32;
@@ -15,7 +17,7 @@ constexpr int NUM_FILES = 1000;
 constexpr int NUMBERS = 1024;
 constexpr size_t BLOCK_SIZE = NUMBERS * sizeof(elem_t);
 
-const std::filesystem::path BUILD_DIR = "build";
+const fs::path BUILD_DIR = "build";
 
 // template <typename T>
 class BlockReaderIterator {
@@ -144,7 +146,7 @@ template <typename It> void kmerge(It first, It last, std::ostream &os) {
 }
 
 static auto get_run_file_path(const int round, const int run_number)
-    -> std::filesystem::path {
+    -> fs::path {
   const auto run_filename{std::to_string(round) + '-' +
                           std::to_string(run_number) + ".run"};
   return BUILD_DIR / run_filename;
@@ -158,22 +160,22 @@ static auto get_run_file_path(const int round, const int run_number)
 
 class Sorter {
 public:
-  Sorter(uint8_t *memory, const size_t size)
+  Sorter(char *memory, const size_t size)
       : memory_(reinterpret_cast<elem_t *>(memory)),
         cap_(size / sizeof(elem_t)) {
     assert(size % sizeof(elem_t) == 0);
   }
   Sorter() = delete;
 
-  auto finish() -> std::vector<std::filesystem::path> {
+  auto finish() -> std::vector<fs::path> {
     do_sort();
 
-    std::vector<std::filesystem::path> ret;
+    std::vector<fs::path> ret;
     ret.swap(result_);
     return ret;
   }
 
-  void take(const std::filesystem::path &path) {
+  void take(const fs::path &path) {
     std::ifstream ifs{path, std::ios::in | std::ios::binary};
     for (;;) {
       const auto n = std::min(BLOCK_SIZE, (cap_ - len_) * sizeof(elem_t));
@@ -201,11 +203,11 @@ private:
 
   size_t len_{0};
   int run_number_{0};
-  std::vector<std::filesystem::path> result_{};
+  std::vector<fs::path> result_{};
 
   static constexpr int round = 1;
 
-  auto dump_memory_into_run_file() const -> std::filesystem::path {
+  auto dump_memory_into_run_file() const -> fs::path {
     const auto filepath = get_run_file_path(round, run_number_);
     std::ofstream ofs{filepath, std::ios::out | std::ios::binary};
     ofs.write(reinterpret_cast<const char *>(memory_), len_ * sizeof(elem_t));
@@ -221,21 +223,103 @@ private:
   }
 };
 
+class Merger {
+public:
+  Merger(char *memory, const size_t size)
+      : memory_(memory), size_(size), B_minus_one_(size / BLOCK_SIZE - 1) {
+    assert(size_ % BLOCK_SIZE == 0);
+    assert(B_minus_one_ >= 2);
+
+    inputs_.reserve(B_minus_one_);
+    output_.rdbuf()->pubsetbuf(memory_ + B_minus_one_ * BLOCK_SIZE, BLOCK_SIZE);
+  }
+
+  Merger() = delete;
+
+  auto finish() -> std::vector<fs::path> {
+    do_merge();
+
+    round_ += 1;
+    run_number_ = 0;
+
+    std::vector<fs::path> ret;
+    ret.swap(result_);
+    return ret;
+  }
+
+  auto take(const fs::path input_path) -> void {
+    inputs_.emplace_back(std::move(input_path));
+    if (inputs_.size() == B_minus_one_) {
+      do_merge();
+    }
+  }
+
+private:
+  char *const memory_;
+  const size_t size_;
+  const size_t B_minus_one_;
+
+  std::vector<fs::path> result_{};
+
+  std::vector<fs::path> inputs_;
+  std::ofstream output_;
+
+  int round_{2};
+  int run_number_{0};
+
+  auto cleanup() -> void {
+    for_each(inputs_.cbegin(), inputs_.cend(),
+             [](const auto &path) { assert(fs::remove(path)); });
+    inputs_.clear();
+    output_.close();
+  }
+
+  auto do_merge() -> void {
+    const auto run_filepath = get_run_file_path(round_, run_number_++);
+    output_.open(run_filepath, std::ios::out | std::ios::binary);
+
+    const size_t size = inputs_.size();
+
+    std::vector<std::ifstream> inputs;
+    inputs.reserve(size);
+    for (const auto &path : inputs_) {
+      inputs.emplace_back(path, std::ios::in | std::ios::binary);
+    }
+
+    std::vector<BlockReaderIterator> iters;
+    iters.reserve(size);
+    for (size_t i = 0; i != size; ++i) {
+      iters.emplace_back(memory_ + i * BLOCK_SIZE, BLOCK_SIZE, inputs[i]);
+    }
+
+    kmerge(iters.begin(), iters.end(), output_);
+    cleanup();
+    result_.emplace_back(std::move(run_filepath));
+  }
+};
+
 int main() {
-  std::ofstream ofs{BUILD_DIR / "test", std::ios::out | std::ios::binary};
-  test(ofs);
-  return 0;
   const size_t size = BATCH_SIZE * NUMBERS * sizeof(elem_t);
-  auto memory = std::make_unique<uint8_t[]>(size);
+  auto memory = std::make_unique<char[]>(size);
   Sorter sorter{memory.get(), size};
 
+  std::vector<fs::path> run_files;
   for (int fileno = 0; fileno != NUM_FILES; ++fileno) {
     const auto input_path = BUILD_DIR / (std::to_string(fileno) + ".bin");
     sorter.take(input_path);
   }
-  const auto run_files = sorter.finish();
+  run_files = sorter.finish();
 
   // merge phase
+  Merger merger{memory.get(), size};
+
+  while (run_files.size() != 1) {
+    for (const auto &path : run_files) {
+      merger.take(path);
+    }
+    run_files = merger.finish();
+  }
+  fs::rename(run_files[0], BUILD_DIR / "result.out");
 
   return 0;
 }

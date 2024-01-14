@@ -4,11 +4,6 @@ LDLIBS = -lstdc++fs
 
 BUILD_DIR = build
 
-test: $(BUILD_DIR)/main
-	./gen.py -r
-	$(BUILD_DIR)/main
-	bash -c 'diff <(./bin2txt.py $(BUILD_DIR)/1-0.run) <(./bin2txt.py $(BUILD_DIR)/{0..31}.bin | sort -n)'
-
 run: $(BUILD_DIR)/main
 	./gen.py -r
 	$(BUILD_DIR)/main
