@@ -120,11 +120,15 @@ public:
 
   void take(const std::filesystem::path &path) {
     std::ifstream ifs{path, std::ios::in | std::ios::binary};
-    std::streamsize size;
-    do {
+    for (;;) {
       const auto n = std::min(BLOCK_SIZE, (cap_ - len_) * sizeof(elem_t));
-      ifs.read(reinterpret_cast<char *>(memory_ + len_), n);
-      size = ifs.gcount();
+      const bool success =
+          (bool)ifs.read(reinterpret_cast<char *>(memory_ + len_), n);
+
+      const auto size = ifs.gcount();
+      if (!success || size == 0) {
+        break;
+      }
       assert(size % sizeof(elem_t) == 0);
 
       len_ += size / sizeof(elem_t);
@@ -133,7 +137,7 @@ public:
       if (is_full) {
         do_sort();
       }
-    } while (size != 0);
+    }
   }
 
 private:
