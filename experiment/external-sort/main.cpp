@@ -17,34 +17,78 @@ constexpr size_t BLOCK_SIZE = NUMBERS * sizeof(elem_t);
 
 const std::filesystem::path BUILD_DIR = "build";
 
+// template <typename T>
+class BlockReaderIterator {
+public:
+  using T = elem_t;
+
+  BlockReaderIterator(char *buffer, size_t size, std::istream &is)
+      : buffer_(buffer), size_(size), is_(is) {}
+  auto next() -> std::optional<T> {
+    if (is_over_ && cur_ == len_) {
+      return std::nullopt;
+    }
+    if (cur_ == len_) {
+      update_buffer();
+    }
+    if (is_over_ && cur_ == len_) {
+      return std::nullopt;
+    }
+    assert(cur_ < len_);
+    return reinterpret_cast<T *const>(buffer_)[cur_++];
+  }
+
+private:
+  char *const buffer_;
+  const size_t size_;
+
+  std::istream &is_;
+
+  size_t len_{0};
+  size_t cur_{0};
+
+  bool is_over_{false};
+
+  auto update_buffer() -> void {
+    assert(cur_ == len_);
+    assert(!is_over_);
+
+    const bool success = (bool)is_.read(buffer_, size_);
+    const auto count = is_.gcount();
+
+    assert(count % sizeof(T) == 0);
+    // std::cerr << success << '\n';
+    // std::cerr << "len: " << len_ << " -> " << (count / sizeof(T)) << '\n';
+    len_ = count / sizeof(T);
+    cur_ = 0;
+
+    if (!success || count == 0) {
+      is_over_ = true;
+    }
+  }
+};
+
 template <typename It> void kmerge(It first, It last, std::ostream &os) {
-  using PI = typename It::value_type;
-  static_assert(
-      std::is_same_v<typename PI::first_type, typename PI::second_type>);
-  static_assert(
-      std::is_same_v<std::remove_reference_t<decltype(*(first->first))>,
-                     elem_t>);
+  static_assert(std::is_same_v<typename It::value_type, BlockReaderIterator>);
+  using BRIT = typename It::value_type;
+  using PI = std::pair<typename BRIT::T, It>;
 
   auto comp = [](const PI &lhs, const PI &rhs) {
-    return *lhs.first > *rhs.first;
+    return lhs.first > rhs.first;
   };
   std::priority_queue<PI, std::vector<PI>, decltype(comp)> pq(comp);
 
   for (auto it = first; it != last; std::advance(it, 1)) {
-    auto &[begin, end] = *it;
-    assert(std::is_sorted(begin, end));
-    if (begin != end) {
-      pq.emplace(*it);
+    if (const auto value = it->next()) {
+      pq.emplace(PI{value.value(), it});
     }
   }
 
   while (!pq.empty()) {
-    const auto [begin, end] = pq.top();
+    const auto [val, it] = pq.top();
     pq.pop();
-    const elem_t val = *begin;
-    const auto next = std::next(begin);
-    if (next != end) {
-      pq.emplace(PI{next, end});
+    if (const auto value = it->next()) {
+      pq.emplace(PI{value.value(), it});
     }
     os.write(reinterpret_cast<const char *>(&val), sizeof(val));
   }
@@ -77,12 +121,23 @@ template <typename It> void kmerge(It first, It last, std::ostream &os) {
     std::cout << "]\n";
   }
 
-  using VIt = std::vector<elem_t>::iterator;
-  using PI = std::pair<VIt, VIt>;
-  std::vector<PI> vec;
-  for (auto &file : files) {
+  std::vector<BlockReaderIterator> vec;
+  std::vector<std::stringstream> inputs(files.size());
+  std::vector<std::vector<char>> buffers(files.size());
+  constexpr size_t size = 256;
+
+  for (size_t i = 0; i != files.size(); ++i) {
+    auto &file = files[i];
+    auto &input = inputs[i];
+    auto &buffer = buffers[i];
+
     std::sort(file.begin(), file.end());
-    vec.emplace_back(PI{file.begin(), file.end()});
+    std::for_each(file.cbegin(), file.cend(), [&](const elem_t val) {
+      input.write(reinterpret_cast<const char *>(&val), sizeof(val));
+    });
+    buffer.resize(size);
+
+    vec.emplace_back(buffer.data(), buffer.size(), input);
   }
 
   kmerge(vec.begin(), vec.end(), os);
@@ -167,6 +222,9 @@ private:
 };
 
 int main() {
+  std::ofstream ofs{BUILD_DIR / "test", std::ios::out | std::ios::binary};
+  test(ofs);
+  return 0;
   const size_t size = BATCH_SIZE * NUMBERS * sizeof(elem_t);
   auto memory = std::make_unique<uint8_t[]>(size);
   Sorter sorter{memory.get(), size};
