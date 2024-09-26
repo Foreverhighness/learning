@@ -28,7 +28,7 @@ $(BUILD_DIR)/user-using-rs-lib: $(SRCS_DIR)/user-using-rs-lib.cpp $(CPP_HEADER) 
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 $(CPP_HEADER): $(RUST_LIB)
-	@cargo install cbindgen &> /dev/null
+	-@cargo install cbindgen > /dev/null 2>&1
 	cbindgen -v $^ --lang=c++ -o $@
 
 header: $(CPP_HEADER)

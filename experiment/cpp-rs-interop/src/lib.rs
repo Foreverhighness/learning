@@ -1,3 +1,5 @@
+pub mod byte_slice_view;
+
 #[repr(C)]
 pub struct UserC {
     pub name: [u8; 32],
