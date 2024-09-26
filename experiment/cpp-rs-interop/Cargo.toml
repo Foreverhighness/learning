@@ -1,0 +1,11 @@
+[package]
+name = "cpp-rs-interop"
+description = "experience from https://gaultier.github.io/blog/rust_c++_interop_trick.html"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[lib]
+name = "user_rs"
+crate-type = ["staticlib"]
