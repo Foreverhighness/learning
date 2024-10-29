@@ -12,11 +12,11 @@ RISCV_HEADERS = asm/pgtable.h asm/page.h asm/cache.h asm/thread_info.h asm/set_m
 X86_HEADERS = asm/asm-offsets.h asm/page_types.h asm/orc_lookup.h asm/vvar.h
 ARM64_HEADERS = asm/hyp_image.h asm/kernel-pgtable.h asm/kexec.h asm/memory.h image.h
 
-ARCH_HEADERS = $(RISCV_HEADERS) $(X86_HEADERS) $(ARM64_HEADERS)
+ARCH_HEADERS += $(RISCV_HEADERS) $(X86_HEADERS) $(ARM64_HEADERS)
 ARCH_HEADERS_PATH = $(ARCH_HEADERS:%=$(INCLUDE)/%)
 
 # linker header
-LINKER_HEADERS = asm/vmlinux.lds.h asm-generic/vmlinux.lds.h asm-generic/codetag.lds.h
+LINKER_HEADERS += asm/vmlinux.lds.h asm-generic/vmlinux.lds.h asm-generic/codetag.lds.h
 LINKER_HEADERS_PATH = $(LINKER_HEADERS:%=$(INCLUDE)/%)
 
 # DIRS = $(INCLUDE)/asm $(INCLUDE)/asm-generic $(INCLUDE)/linux $(ARCHS:%=arch/%)
@@ -26,10 +26,11 @@ all: $(ARCHS)
 
 $(ARCHS): %: %.ld
 
-$(ARCHS:%=%.ld): %.ld: arch/%/vmlinux.lds.S $(LINKER_HEADERS_PATH) $(ARCH_HEADERS_PATH)
+%.ld: arch/%/vmlinux.lds.S $(LINKER_HEADERS_PATH) $(ARCH_HEADERS_PATH)
 	$(CC) $(CFLAGS) -E $< -o $@
 
-$(ARCHS:%=arch/%/vmlinux.lds.S): %:
+.PRECIOUS: arch/%/vmlinux.lds.S
+arch/%/vmlinux.lds.S:
 	@mkdir -p $(@D)
 ifeq ($(strip $(LOCAL_REPO)),)
  	wget -q "$(URL)/$(@D)/kernel/$(@F)" -O $@
