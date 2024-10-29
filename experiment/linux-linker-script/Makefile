@@ -33,7 +33,7 @@ $(ARCHS): %: %.ld
 arch/%/vmlinux.lds.S:
 	@mkdir -p $(@D)
 ifeq ($(strip $(LOCAL_REPO)),)
- 	wget -q "$(URL)/$(@D)/kernel/$(@F)" -O $@
+	wget -q "$(URL)/$(@D)/kernel/$(@F)" -O $@
 else
 	@cp "$(LOCAL_REPO)/$(@D)/kernel/$(@F)" $@
 endif
