@@ -11,7 +11,7 @@ main: $(OBJS)
 
 clean:
 	rm -f main
-	rm *.o
+	rm -f *.o
 
 .PHONY: readelf clean
 
