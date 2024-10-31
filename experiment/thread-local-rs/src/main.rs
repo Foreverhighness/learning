@@ -3,6 +3,7 @@ use std::{cell::Cell, time::Instant};
 const STEPS: u32 = 1_000_000_000;
 fn sum_rust() -> u32 {
     thread_local! {
+      #[expect(clippy::missing_const_for_thread_local)]
       static COUNTER: Cell<u32> = Cell::new(0);
     }
 
