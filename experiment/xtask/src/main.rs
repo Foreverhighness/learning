@@ -1,40 +1,29 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
-use anyhow::Result;
-use clap::{Parser, Subcommand};
-use duct::cmd;
 use walkdir::WalkDir;
+use xshell::{cmd, Shell};
 
-#[derive(Debug, Parser)]
-#[command(author, version, about, long_about = None)]
-struct Cli {
-    #[command(subcommand)]
-    action: Action,
-}
-
-#[derive(Debug, Subcommand)]
-enum Action {
-    /// Clean all
-    Clean,
-}
+mod flags;
 
 static WORKSPACE_PATH: LazyLock<&Path> = LazyLock::new(|| {
     Box::leak(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .parent()
-            .unwrap()
+            .expect("workspace not found!")
             .to_path_buf()
             .into_boxed_path(),
     )
 });
 
-fn main() -> Result<()> {
-    let Cli { action } = Cli::parse();
+fn main() -> xshell::Result<()> {
+    let cli = flags::Xtask::from_env_or_exit();
 
-    match action {
-        Action::Clean => {
+    let sh = &Shell::new()?;
+    sh.change_dir(*WORKSPACE_PATH);
+
+    match cli.subcommand {
+        flags::XtaskCmd::Clean(_) => {
             for dir in WalkDir::new(*WORKSPACE_PATH)
                 .max_depth(1)
                 .into_iter()
@@ -42,16 +31,20 @@ fn main() -> Result<()> {
                 .filter_map(Result::ok)
             {
                 // make clean
-                if fs::exists(dir.path().join("Makefile"))? {
-                    cmd!("make", "clean").dir(dir.path()).run()?;
+                if dir.path().join("Makefile").exists() {
+                    let path = dir.path();
+                    cmd!(sh, "make clean --no-print-directory -C {path}")
+                        .quiet()
+                        .run()?;
                     continue;
                 }
                 // fallback to do nothing
             }
 
             // cargo clean at workspace
-            cmd!("cargo", "clean").dir(*WORKSPACE_PATH).run()?;
+            cmd!(sh, "cargo clean").run()?;
         }
     }
+
     Ok(())
 }

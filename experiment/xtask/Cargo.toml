@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.91"
-clap = { version = "4.5.20", features = ["derive"] }
-duct = "0.13.7"
 walkdir = "2.5.0"
+xflags = "0.3.2"
+xshell = "0.2.6"
