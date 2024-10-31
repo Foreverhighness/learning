@@ -3,13 +3,13 @@ CXXFLAGS = -m64 -Og -g -Wall -Werror -std=c++20
 
 SRCS_DIR := src
 BUILD_DIR := build
-CPP_HEADER := $(SRCS_DIR)/user-rs-lib.h
+CPP_HEADER := $(BUILD_DIR)/user-rs-lib.h
 RUST_LIB := $(SRCS_DIR)/lib.rs
 
 SRCS := $(shell find $(SRCS_DIR) -name "*.cpp")
 RUNS := $(notdir $(basename $(SRCS)))
 EXES := $(RUNS:%=$(BUILD_DIR)/%)
-LIB := "target/debug/libuser_rs.a"
+LIB := $(BUILD_DIR)/libuser_rs.a
 
 # $(info $(SRCS) $(RUNS) $(EXES))
 
@@ -25,7 +25,7 @@ $(BUILD_DIR)/%: $(SRCS_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 $(BUILD_DIR)/user-using-rs-lib: $(SRCS_DIR)/user-using-rs-lib.cpp $(CPP_HEADER) $(LIB)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) -I$(BUILD_DIR) $^ -o $@
 
 $(CPP_HEADER): $(RUST_LIB)
 	-@cargo install cbindgen > /dev/null 2>&1
@@ -34,11 +34,10 @@ $(CPP_HEADER): $(RUST_LIB)
 header: $(CPP_HEADER)
 
 $(LIB): $(RUST_LIB)
-	cargo build
+	cargo build -Z unstable-options --artifact-dir $(BUILD_DIR)
 
 clean:
 	cargo clean
-	rm -r $(BUILD_DIR)
-	rm $(CPP_HEADER)
+	rm -rf $(BUILD_DIR)
 
 .PHONY: run all header clean
