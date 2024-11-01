@@ -2,7 +2,8 @@
 
 extern crate alloc;
 
-use alloc::{boxed::Box, vec};
+use alloc::boxed::Box;
+use alloc::vec;
 
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64Mcg;
@@ -69,6 +70,7 @@ impl PixelGenerator {
             rng: Pcg64Mcg::seed_from_u64(seed),
         }
     }
+
     fn color(&mut self, i: usize, j: usize, color: usize) -> ColorType {
         if self.colors[color][i][j] == 0 {
             self.colors[color][i][j] = if self.rng.gen_range(0..SCALE_FACTOR) < self.probability {
@@ -87,12 +89,15 @@ impl PixelGenerator {
         }
         self.colors[color][i][j]
     }
+
     pub fn red(&mut self, i: usize, j: usize) -> ColorType {
         self.color(i, j, 0)
     }
+
     pub fn green(&mut self, i: usize, j: usize) -> ColorType {
         self.color(i, j, 1)
     }
+
     pub fn blue(&mut self, i: usize, j: usize) -> ColorType {
         self.color(i, j, 2)
     }

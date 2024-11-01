@@ -1,4 +1,6 @@
-use std::{env, path::Path, process::Command};
+use std::env;
+use std::path::Path;
+use std::process::Command;
 
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();

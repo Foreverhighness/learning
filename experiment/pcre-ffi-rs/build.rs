@@ -1,7 +1,5 @@
-use std::{
-    io::Cursor,
-    path::{Path, PathBuf},
-};
+use std::io::Cursor;
+use std::path::{Path, PathBuf};
 
 use bzip2::read::BzDecoder;
 use cmake::Config;

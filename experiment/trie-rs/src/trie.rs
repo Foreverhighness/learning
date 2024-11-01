@@ -1,5 +1,8 @@
+use std::any::Any;
+use std::fmt::Debug;
+use std::sync::Arc;
+
 use crate::trie_node::{NodeValueMarkerTrait, NodeWithValue, NodeWithoutValue, TrieNode};
-use std::{any::Any, fmt::Debug, sync::Arc};
 
 #[derive(Clone, Default)]
 pub struct Trie {

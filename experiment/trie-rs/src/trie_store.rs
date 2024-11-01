@@ -1,8 +1,8 @@
-use crate::{trie::Trie, trie_node::NodeValueMarkerTrait};
-use std::{
-    ptr::NonNull,
-    sync::{Mutex, RwLock},
-};
+use std::ptr::NonNull;
+use std::sync::{Mutex, RwLock};
+
+use crate::trie::Trie;
+use crate::trie_node::NodeValueMarkerTrait;
 
 pub struct ValueGuard<'v, T>
 where

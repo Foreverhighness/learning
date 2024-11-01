@@ -1,8 +1,7 @@
-use clap::{arg, command, Parser};
-
 use std::io::{BufWriter, Write};
 
 use art_rs::{PixelGenerator, MAX_COLOR, SCALE_FACTOR as SCALE_FACTOR_U32};
+use clap::{arg, command, Parser};
 
 const DEFAULT_WIDTH: u16 = 1024;
 const DEFAULT_HEIGHT: u16 = 1024;
@@ -25,7 +24,8 @@ struct Cli {
     #[arg(short, long, default_value_t = DEFAULT_RADIUS, value_parser = clap::value_parser!(u16).range(1..))]
     radius: u16,
 
-    /// The probability to generate one pixel, scale by a factor of 100000, means 1000 -> 1%, default 100 -> 0.1%
+    /// The probability to generate one pixel, scale by a factor of 100000, means 1000 -> 1%,
+    /// default 100 -> 0.1%
     #[arg(short, long, default_value_t = DEFAULT_PROBABILITY, value_parser = clap::value_parser!(u32).range(1..=SCALE_FACTOR))]
     probability: u32,
 

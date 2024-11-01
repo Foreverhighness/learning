@@ -1,4 +1,5 @@
-use std::{cell::Cell, time::Instant};
+use std::cell::Cell;
+use std::time::Instant;
 
 const STEPS: u32 = 1_000_000_000;
 fn sum_rust() -> u32 {
