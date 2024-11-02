@@ -6,6 +6,7 @@ members = [
     "cpp-rs-interop",
     "pcre-ffi-rs",
     "thread-local-rs",
+    "track-caller-rs",
     "trie-rs",
     "xtask",
 ]
