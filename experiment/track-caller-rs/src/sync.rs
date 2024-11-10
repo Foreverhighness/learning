@@ -1,5 +1,4 @@
 mod refcell;
-mod sync_refcell;
 
 pub use refcell::SyncRefCell;
 
