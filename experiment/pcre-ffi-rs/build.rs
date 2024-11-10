@@ -17,10 +17,11 @@ const LIB_NAME: &str = "libpcre2-8";
 const BUILD_TARGET: &str = "pcre2-8-static";
 
 fn main() {
-    if let Err(_) = pkg_config::Config::new()
+    if pkg_config::Config::new()
         .statik(true)
         .atleast_version(VERSION)
         .probe(LIB_NAME)
+        .is_err()
     {
         let build_dir = build_pcre2();
         println!("cargo:rustc-link-search=native={}", build_dir.display());
@@ -40,21 +41,17 @@ fn build_pcre2() -> PathBuf {
     archive.unpack(&third_party).unwrap();
 
     let source_dir = {
-        let mut third_party = third_party;
-        third_party.push(PCRE2_PATH);
-        third_party
+        let mut source_dir = third_party;
+        source_dir.push(PCRE2_PATH);
+        source_dir
     };
 
     let dst_dir = (cmake::Config::new(source_dir))
         .build_target(BUILD_TARGET)
         .build();
 
-    let build_dir = {
-        let mut dst_dir = dst_dir;
-        dst_dir.push("build");
-        dst_dir
-    };
-
+    let mut build_dir = dst_dir;
+    build_dir.push("build");
     build_dir
 }
 

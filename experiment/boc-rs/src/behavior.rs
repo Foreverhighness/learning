@@ -1,4 +1,5 @@
 //! Behavior of concurrency
+#[expect(clippy::borrow_deref_ref)]
 #[allow(dead_code)]
 pub mod basic {
     use core::fmt::Debug;
@@ -39,7 +40,7 @@ pub mod basic {
         }
     }
 
-    /// Use RefCell to check correctness, but failed to pass borrow checker
+    // /// Use RefCell to check correctness, but failed to pass borrow checker
     // type InteriorMutCell<T> = core::cell::RefCell<T>;
     // type CownRefMut<'l, T> = core::cell::RefMut<'l, T>;
 
@@ -195,7 +196,7 @@ pub mod basic {
 
         fn requests(&self) -> Vec<Request> {
             self.iter()
-                .map(|x| Request::new(CownPtr::clone(&x)))
+                .map(|x| Request::new(CownPtr::clone(x)))
                 .collect()
         }
 
@@ -394,7 +395,7 @@ pub mod basic {
             runtime::spawn(move || {
                 (behavior.routine)();
 
-                behavior.requests.into_iter().for_each(|req| req.release());
+                behavior.requests.iter().for_each(|req| req.release());
             });
         }
 

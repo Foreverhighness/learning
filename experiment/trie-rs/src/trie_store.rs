@@ -12,7 +12,7 @@ where
     value: &'v T,
 }
 
-impl<'v, T> ValueGuard<'v, T>
+impl<T> ValueGuard<'_, T>
 where
     T: NodeValueMarkerTrait,
 {
@@ -22,7 +22,7 @@ where
     }
 }
 
-impl<'v, T> std::ops::Deref for ValueGuard<'v, T>
+impl<T> std::ops::Deref for ValueGuard<'_, T>
 where
     T: NodeValueMarkerTrait,
 {

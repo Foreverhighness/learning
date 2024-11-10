@@ -1,3 +1,5 @@
+#![feature(trait_upcasting)]
+
 mod trie;
 mod trie_node;
 mod trie_store;
