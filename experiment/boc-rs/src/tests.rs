@@ -3,8 +3,6 @@
 mod boc_fibonacci {
     //! Computing fibonacci sequence using [`boc`].
 
-    use crossbeam_channel::{bounded, Sender};
-
     use crate::*;
 
     fn fibonacci_inner(n: usize, sender: Option<Sender<usize>>) -> CownPtr<usize> {
@@ -45,7 +43,6 @@ mod boc_banking {
     use std::thread::sleep;
     use std::time::Duration;
 
-    use crossbeam_channel::bounded;
     use rand::{thread_rng, Rng};
 
     use crate::*;
@@ -112,8 +109,6 @@ mod boc_banking {
 
 mod boc_merge_sort {
     //! Merge sort using BoC.
-
-    use crossbeam_channel::{bounded, Sender};
 
     use crate::*;
 
@@ -217,8 +212,6 @@ mod basic_test {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
 
-    use crossbeam_channel::bounded;
-
     use super::*;
     use crate::*;
 
@@ -234,7 +227,7 @@ mod basic_test {
             let (send1, recv1) = bounded(1);
             let (send2, recv2) = bounded(1);
 
-            rayon::spawn(move || {
+            runtime::spawn(move || {
                 when!(c_sent_t1; sent; {
                     if !*sent {
                         msg_t1.fetch_add(1, Ordering::Relaxed);
@@ -245,7 +238,7 @@ mod basic_test {
                     send1.send(()).unwrap();
                 });
             });
-            rayon::spawn(move || {
+            runtime::spawn(move || {
                 when!(c_sent_t2; sent; {
                     if !*sent {
                         msg_t2.fetch_add(1, Ordering::Relaxed);
@@ -278,7 +271,7 @@ mod basic_test {
             let (send_t1, recv) = bounded(0);
             let send_t2 = send_t1.clone();
 
-            rayon::spawn(move || {
+            runtime::spawn(move || {
                 when!(c_flag1_t1; flag1; *flag1 = true);
 
                 if msg_t1
@@ -291,7 +284,7 @@ mod basic_test {
                     });
                 }
             });
-            rayon::spawn(move || {
+            runtime::spawn(move || {
                 when!(c_flag2_t2; flag2; *flag2 = true);
 
                 if msg_t2
@@ -315,7 +308,7 @@ mod basic_test {
     fn fibonacci() {
         let (send_finish, recv_finish) = bounded(0);
 
-        rayon::spawn(move || {
+        runtime::spawn(move || {
             let mut accumulator = vec![0, 1];
             for n in 2..=25 {
                 let answer = accumulator[n - 2] + accumulator[n - 1];
@@ -333,7 +326,7 @@ mod basic_test {
     fn merge_sort() {
         let (send_finish, recv_finish) = bounded(0);
 
-        rayon::spawn(move || {
+        runtime::spawn(move || {
             let mut arr1 = vec![2, 3, 1, 4];
             let res1 = boc_merge_sort::merge_sort(arr1.clone());
             arr1.sort();
@@ -372,7 +365,7 @@ mod basic_test {
     fn banking() {
         let (send_finish, recv_finish) = bounded(0);
 
-        rayon::spawn(move || {
+        runtime::spawn(move || {
             boc_banking::run_transactions(20, 20, true);
             send_finish.send(()).unwrap();
         });
@@ -382,16 +375,16 @@ mod basic_test {
 }
 
 mod stress_test {
-    use crossbeam_channel::{bounded, Receiver, Sender};
     use rand::{thread_rng, Rng};
 
     use super::*;
+    use crate::*;
 
     #[test]
     fn fibonacci() {
         let (send_finish, recv_finish) = bounded(0);
 
-        rayon::spawn(move || {
+        runtime::spawn(move || {
             assert_eq!(boc_fibonacci::fibonacci(28), 317811);
             send_finish.send(()).unwrap();
         });
@@ -403,7 +396,7 @@ mod stress_test {
     fn banking() {
         let (send_finish, recv_finish) = bounded(0);
 
-        rayon::spawn(move || {
+        runtime::spawn(move || {
             boc_banking::run_transactions(1234, 100000, false);
             send_finish.send(()).unwrap();
         });
@@ -425,7 +418,7 @@ mod stress_test {
             let logsize = LOGSZ_LO + i % (LOGSZ_HI - LOGSZ_LO);
             let len = 1 << logsize;
             let mut arr = (0..len).map(|_| rng.gen()).collect::<Vec<_>>();
-            rayon::spawn(move || {
+            runtime::spawn(move || {
                 let res = boc_merge_sort::merge_sort(arr.clone());
                 arr.sort_unstable();
                 assert_eq!(arr, res);

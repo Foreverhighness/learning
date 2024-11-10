@@ -10,6 +10,8 @@ pub mod basic {
     use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicUsize, Ordering};
     use std::sync::Arc;
 
+    use crate::runtime;
+
     // region:Cown
 
     /// A trait representing a `Cown`.
@@ -389,7 +391,7 @@ pub mod basic {
         fn run(self) {
             // eprintln!("start running");
             let behavior = Pin::into_inner(self.0);
-            rayon::spawn(move || {
+            runtime::spawn(move || {
                 (behavior.routine)();
 
                 behavior.requests.into_iter().for_each(|req| req.release());
@@ -445,8 +447,7 @@ pub mod basic {
 
 #[cfg(test)]
 mod tests {
-    use super::basic::*;
-    use crate::when;
+    use crate::*;
 
     #[test]
     fn boc() {
@@ -456,7 +457,7 @@ mod tests {
         let c2_ = c2.clone();
         let c3_ = c3.clone();
 
-        let (finish_sender, finish_receiver) = crossbeam_channel::bounded(0);
+        let (finish_sender, finish_receiver) = bounded(0);
 
         when!(c1, c2; g1, g2; {
             // c3, c2 are moved into this thunk. There's no such thing as auto-cloning move closure.
@@ -486,7 +487,7 @@ mod tests {
         let c2_ = c2.clone();
         let c3_ = c3.clone();
 
-        let (finish_sender, finish_receiver) = crossbeam_channel::bounded(0);
+        let (finish_sender, finish_receiver) = bounded(0);
 
         run_when(vec![c1.clone(), c2.clone()], move |mut x| {
             // c3, c2 are moved into this thunk. There's no such thing as auto-cloning move closure.
@@ -513,7 +514,7 @@ mod tests {
         let num_thread = 2;
         let count = 100_000_000u64;
 
-        let (tx1, rx) = crossbeam_channel::bounded(num_thread);
+        let (tx1, rx) = bounded(num_thread);
         let tx2 = tx1.clone();
 
         let c1 = CownPtr::new(0);
