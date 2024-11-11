@@ -1,3 +1,7 @@
+#![feature(sync_unsafe_cell)]
+#![allow(clippy::undocumented_unsafe_blocks, reason = "too many unsafe block")]
+
+use core::cell::SyncUnsafeCell;
 use std::cell::Cell;
 use std::time::Instant;
 
@@ -35,7 +39,8 @@ fn with_c_counter<T>(f: impl FnOnce(&Cell<u32>) -> T) -> T {
     extern "C" {
         fn get_thread_local() -> *mut u32;
     }
-    let counter = unsafe { &*get_thread_local().cast::<Cell<u32>>() };
+    let counter = unsafe { get_thread_local() };
+    let counter = unsafe { &*counter.cast::<Cell<u32>>() };
     f(counter)
 }
 
@@ -49,14 +54,13 @@ fn sum_rust_c() -> u32 {
     with_c_counter(std::cell::Cell::get)
 }
 
-static mut KEY: libc::pthread_key_t = 0;
+static KEY: SyncUnsafeCell<libc::pthread_key_t> = SyncUnsafeCell::new(0);
 
 fn with_pthread_counter<T>(f: impl FnOnce(&Cell<u32>) -> T) -> T {
-    unsafe {
-        let ptr = libc::pthread_getspecific(KEY);
-        let cell: &Cell<u32> = &*ptr.cast();
-        f(cell)
-    }
+    let key = unsafe { *KEY.get() };
+    let ptr = unsafe { libc::pthread_getspecific(key) };
+    let cell: &Cell<u32> = unsafe { &*ptr.cast() };
+    f(cell)
 }
 
 fn sum_pthread() -> u32 {
@@ -110,17 +114,17 @@ fn main() {
         let r = sum_rust_unstable();
         eprintln!("#[thread_local]: {} {}ms", r, t.elapsed().as_millis());
     }
-    #[allow(clippy::items_after_statements)]
+    #[expect(clippy::items_after_statements, reason = "original version")]
     {
-        unsafe {
-            let cell: Box<Cell<u32>> = Box::new(Cell::new(0u32));
-            let cell = Box::into_raw(cell);
-            unsafe extern "C" fn free(ptr: *mut libc::c_void) {
-                let _: Box<Cell<u32>> = Box::from_raw(ptr.cast());
-            }
-            libc::pthread_key_create((&raw mut KEY).cast(), Some(free));
-            libc::pthread_setspecific(KEY, cell.cast());
+        let cell: Box<Cell<u32>> = Box::new(Cell::new(0u32));
+        let cell = Box::into_raw(cell);
+        unsafe extern "C" fn free(ptr: *mut libc::c_void) {
+            let _: Box<Cell<u32>> = Box::from_raw(ptr.cast());
         }
+        unsafe { libc::pthread_key_create(KEY.get(), Some(free)) };
+        let key = unsafe { *KEY.get() };
+        unsafe { libc::pthread_setspecific(key, cell.cast()) };
+
         let t = Instant::now();
         let r = sum_pthread();
         eprintln!("pthread:         {} {}ms", r, t.elapsed().as_millis());

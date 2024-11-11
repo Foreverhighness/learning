@@ -1,6 +1,7 @@
 //! Behavior of concurrency
-#[expect(clippy::borrow_deref_ref)]
-#[allow(dead_code)]
+#![allow(dead_code, reason = "may use other implement.")]
+
+#[expect(clippy::borrow_deref_ref, reason = "MSRV require, remove soon.")]
 pub mod basic {
     use core::fmt::Debug;
     use core::hint;
@@ -71,7 +72,7 @@ pub mod basic {
     }
 
     /// Send bound is copied from `std::sync::Mutex`
-    /// Behavior must ensure there is only one thread modify Cown
+    /// SAFETY: Behavior must ensure there is only one thread modify Cown
     unsafe impl<T: Send> Sync for Cown<T> {}
 
     impl<T> CownTrait for Cown<T> {
@@ -184,6 +185,7 @@ pub mod basic {
         }
 
         fn get_mut<'l>(self) -> Self::CownRefs<'l> {
+            // SAFETY: `Self: 'l` guarantees that reference is valid.
             unsafe { (&mut *self.0.inner.resource.get(), self.1.get_mut()) }
         }
     }
@@ -202,6 +204,7 @@ pub mod basic {
 
         fn get_mut<'l>(self) -> Self::CownRefs<'l> {
             self.iter()
+                // SAFETY: `Self: 'l` guarantees that reference is valid.
                 .map(|x| unsafe { &mut *x.inner.resource.get() })
                 .collect()
         }
@@ -242,6 +245,7 @@ pub mod basic {
                 .target
                 .last_swap((&raw const *self).cast_mut(), Ordering::Relaxed);
 
+            // SAFETY: `prev_req` must contains valid pointer.
             let Some(prev_req) = (unsafe { prev_req.as_ref() }) else {
                 // prev_req is null
                 behavior.resolve_one();
@@ -290,6 +294,7 @@ pub mod basic {
                 }
             }
 
+            // SAFETY: `behavior` is valid pointer.
             let behavior = unsafe { behavior.as_ref().unwrap() };
             behavior.resolve_one();
 
@@ -354,6 +359,7 @@ pub mod basic {
             }
             debug_assert_eq!(self.count.load(Ordering::Relaxed), 0);
 
+            // SAFETY: `self` is not null, and is valid
             unsafe { PinnedBehavior::from_inner(NonNull::from_ref(self)) }.run();
         }
     }
@@ -400,6 +406,7 @@ pub mod basic {
         }
 
         unsafe fn from_inner(ptr: NonNull<Behavior>) -> Self {
+            // SAFETY: caller holder
             Self(Box::into_pin(unsafe { Box::from_raw(ptr.as_ptr()) }))
         }
     }

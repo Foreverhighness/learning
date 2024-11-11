@@ -17,6 +17,7 @@ where
     T: NodeValueMarkerTrait,
 {
     const fn new(root: Trie, value: NonNull<T>) -> Self {
+        // SAFETY: caller safety guarantees
         let value = unsafe { value.as_ref() };
         Self { _root: root, value }
     }

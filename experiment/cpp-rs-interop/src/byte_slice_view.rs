@@ -6,7 +6,10 @@ pub struct ByteSliceView {
     pub len: usize,
 }
 
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
+/// # Panics
+///
+/// panic if `comment` or `name` are not valid utf8 strings
+#[expect(clippy::not_unsafe_ptr_arg_deref, reason = "for testing")]
 #[no_mangle]
 pub extern "C" fn Rust_write_comment_with_ByteSliceView(
     user: &mut UserC,
@@ -14,15 +17,13 @@ pub extern "C" fn Rust_write_comment_with_ByteSliceView(
     comment_len: usize,
     name: ByteSliceView,
 ) {
-    let comment = unsafe {
-        let comment = std::slice::from_raw_parts(comment, comment_len);
-        std::str::from_utf8_unchecked(comment)
-    };
+    // SAFETY: caller ensure safety
+    let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
+    let comment = std::str::from_utf8(comment).unwrap();
 
-    let name = unsafe {
-        let name = std::slice::from_raw_parts(name.ptr, name.len);
-        std::str::from_utf8_unchecked(name)
-    };
+    // SAFETY: caller ensure safety
+    let name = unsafe { std::slice::from_raw_parts(name.ptr, name.len) };
+    let name = std::str::from_utf8(name).unwrap();
     println!("{name} {:x?} says: {comment}", user.uuid);
 
     user.comments_count += 1;

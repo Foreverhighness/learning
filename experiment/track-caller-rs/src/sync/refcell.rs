@@ -54,7 +54,7 @@ impl Display for BorrowMutError {
 #[inline(never)]
 #[track_caller]
 #[cold]
-#[allow(clippy::needless_pass_by_value)]
+#[expect(clippy::needless_pass_by_value, reason = "BorrowMutError may be ZST")]
 fn panic_already_borrowed(err: BorrowMutError) -> ! {
     panic!("already borrowed: {:?}", err)
 }
@@ -63,7 +63,7 @@ fn panic_already_borrowed(err: BorrowMutError) -> ! {
 #[inline(never)]
 #[track_caller]
 #[cold]
-#[allow(clippy::needless_pass_by_value)]
+#[expect(clippy::needless_pass_by_value, reason = "BorrowMutError may be ZST")]
 fn panic_already_mutably_borrowed(err: BorrowError) -> ! {
     panic!("already mutably borrowed: {:?}", err)
 }
@@ -89,13 +89,13 @@ fn panic_already_mutably_borrowed(err: BorrowError) -> ! {
 type BorrowFlag = isize;
 const UNUSED: BorrowFlag = 0;
 
-#[allow(clippy::inline_always)]
+#[expect(clippy::inline_always, reason = "Performance")]
 #[inline(always)]
 const fn is_writing(x: BorrowFlag) -> bool {
     x < UNUSED
 }
 
-#[allow(clippy::inline_always)]
+#[expect(clippy::inline_always, reason = "Performance")]
 #[inline(always)]
 const fn is_reading(x: BorrowFlag) -> bool {
     x > UNUSED
@@ -133,6 +133,7 @@ impl AtomicLocation {
 
     /// Returns a copy of the contained value.
     fn get(&self) -> Option<&'static Location<'static>> {
+        // SAFETY: self.0 always contains valid pointer
         unsafe { self.0.load(Ordering::Relaxed).as_ref() }
     }
 
@@ -312,7 +313,9 @@ impl<T: ?Sized> SyncRefCell<T> {
 // region:Impl Trait
 
 /// Reference to `std::sync::Mutex` Implementation
+// SAFETY: caller should guarantee not use `RefCell` in multi-thread.
 unsafe impl<T: ?Sized + Send> Send for SyncRefCell<T> {}
+// SAFETY: caller should guarantee not use `RefCell` in multi-thread.
 unsafe impl<T: ?Sized + Send> Sync for SyncRefCell<T> {}
 
 impl<T: Debug> Debug for SyncRefCell<T> {
@@ -341,6 +344,7 @@ struct BorrowRef<'b> {
 }
 
 impl<'b> BorrowRef<'b> {
+    #[expect(clippy::if_then_some_else_none, reason = "Comment is important.")]
     #[inline]
     fn new(borrow: &'b AtomicBorrowFlag) -> Option<Self> {
         let b = borrow.get().wrapping_add(1);

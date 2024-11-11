@@ -1,5 +1,7 @@
 //! Command Line
 //! copy from <https://github.com/rust-lang/rust-analyzer/blob/master/xtask/src/flags.rs>
+#![allow(clippy::allow_attributes)]
+#![allow(clippy::allow_attributes_without_reason)]
 
 xflags::xflags! {
     src "./src/flags.rs"

@@ -1,5 +1,5 @@
-#![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
+#![allow(non_camel_case_types, reason = "FFI")]
+#![allow(non_snake_case, reason = "FFI")]
 use std::ffi::{c_void, CString};
 use std::io::BufRead;
 use std::os::raw::{c_int, c_uchar};
@@ -65,6 +65,7 @@ fn main() {
         eprintln!("pattern: {pattern:?}");
         let mut errorcode = 0;
         let mut erroroffset: usize = 0;
+        // SAFETY: all args are correctly set.
         unsafe {
             pcre2_compile_8(
                 pattern.as_ptr().cast(),
@@ -85,18 +86,24 @@ fn main() {
         let subject = CString::new(subject).unwrap();
         eprintln!("{line_no} subject: {subject:?}");
 
+        // SAFETY: `re` is valid.
         let match_data = unsafe { pcre2_match_data_create_from_pattern_8(re, NULL) };
+        debug_assert!(!match_data.is_null());
         let rc =
+            // SAFETY: `re` and `match_data` is valid.
             unsafe { pcre2_match_8(re, subject.as_ptr().cast(), length, 0, 0, match_data, NULL) };
         if rc >= 0 {
             debug_assert_ne!(rc, 0);
             let rc = usize::try_from(rc).unwrap();
 
-            let ovector = unsafe {
-                let ovector = pcre2_get_ovector_pointer_8(match_data);
-                std::slice::from_raw_parts(ovector, rc * 2)
-            };
+            // SAFETY: `match_data` is valid.
+            let ovector = unsafe { pcre2_get_ovector_pointer_8(match_data) };
+            debug_assert!(!ovector.is_null());
+
+            // SAFETY: `ovector` is valid
+            let ovector = unsafe { std::slice::from_raw_parts(ovector, rc * 2) };
             debug_assert!(ovector.len() >= 4);
+
             eprintln!("Match succeeded at offset {:?}", ovector[0]);
 
             let substring = {
@@ -108,10 +115,12 @@ fn main() {
             eprintln!("found: {result}");
             send_result(result);
         }
+        // SAFETY: `match_data` is valid
         unsafe {
             pcre2_match_data_free_8(match_data);
         }
     }
+    // SAFETY: `re` is valid
     unsafe {
         pcre2_code_free_8(re);
     }

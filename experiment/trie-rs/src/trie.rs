@@ -84,7 +84,6 @@ impl Trie {
     }
 }
 
-#[allow(clippy::indexing_slicing)]
 fn recursion_remove(cur: &dyn TrieNode, key: &str) -> Option<Box<dyn TrieNode>> {
     if key.is_empty() {
         debug_assert!(cur.is_value_node());

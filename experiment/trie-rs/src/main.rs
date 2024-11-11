@@ -10,7 +10,7 @@ use std::sync::Arc;
 use trie::Trie;
 use trie_store::TrieStore;
 
-#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
+#[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "test")]
 fn main() {
     {
         let mut trie = Trie::new();
@@ -154,7 +154,7 @@ fn main() {
 
     {
         let store = &TrieStore::new();
-        let keys_per_thread = 10_000;
+        let keys_per_thread = 10_000_u32;
 
         std::thread::scope(move |s| {
             let mut threads = Vec::new();

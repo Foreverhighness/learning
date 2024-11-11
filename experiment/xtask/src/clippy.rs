@@ -1,15 +1,16 @@
 //! lints from <https://rust-lang.github.io/rust-clippy/rust-1.82.0/index.html>
+#![allow(dead_code, reason = "allow dead_code")]
 
 enum LintGroup {
-    // Cargo,
-    // Complexity,
-    // Correctness,
+    Cargo,
+    Complexity,
+    Correctness,
     Nursery,
     Pedantic,
-    // Perf,
-    // Restriction,
-    // Style,
-    // Suspicious,
+    Perf,
+    Restriction,
+    Style,
+    Suspicious,
 }
 
 enum LintApplicability {
@@ -321,6 +322,164 @@ pub const CLIPPY_ARGS: &[&str] = &[
     // endregion:nursery
 
     // region:restriction
+
+    // deny!(
+    //     "alloc_instead_of_core",
+    //     group=Restriction, applicability=MachineApplicable,
+    //     reason="Writing `no_std` friendly code."
+    // ),
+    // deny!(
+    //     "std_instead_of_core",
+    //     group=Restriction, applicability=MachineApplicable,
+    //     reason="Writing `no_std` friendly code."
+    // ),
+    // deny!(
+    //     "std_instead_of_alloc",
+    //     group=Restriction, applicability=Unspecified,
+    //     reason="Writing `no_std` friendly code."
+    // ),
+
+    deny!(
+        "allow_attributes",
+        group=Restriction, applicability=MachineApplicable,
+        reason="Prefer use `expect` attribute than `allow`."
+    ),
+    deny!(
+        "allow_attributes_without_reason",
+        group=Restriction, applicability=Unspecified,
+        reason="Allow attribute should explain the reason."
+    ),
+    deny!(
+        "clone_on_ref_ptr",
+        group=Restriction, applicability=Unspecified,
+        reason="Prefer explicit clone over cheap clone types."
+    ),
+    deny!(
+        "default_union_representation",
+        group=Restriction, applicability=Unspecified,
+        reason="`union` should be `repr(C)`."
+    ),
+    deny!(
+        "empty_drop",
+        group=Restriction, applicability=MaybeIncorrect,
+        reason="Disallow empty `Drop` implement."
+    ),
+    deny!(
+        "error_impl_error",
+        group=Restriction, applicability=Unspecified,
+        reason="Errors should implement `Error` trait."
+    ),
+    deny!(
+        "filetype_is_file",
+        group=Restriction, applicability=Unspecified,
+        reason="`is_file` doesn't cover special file types in unix-like systems, and doesn't cover symlink in windows."
+    ),
+    deny!(
+        "format_push_string",
+        group=Restriction, applicability=Unspecified,
+        reason="Avoid heap allocation."
+    ),
+    deny!(
+        "if_then_some_else_none",
+        group=Restriction, applicability=Unspecified,
+        reason="More concise and incurs no loss of clarity."
+    ),
+    deny!(
+        "infinite_loop",
+        group=Restriction, applicability=MaybeIncorrect,
+        reason="Explicit mark function that is never return."
+    ),
+    deny!(
+        "lossy_float_literal",
+        group=Restriction, applicability=MachineApplicable,
+        reason="Be careful about precision."
+    ),
+    deny!(
+        "mem_forget",
+        group=Restriction, applicability=Unspecified,
+        reason="Prefer `ManuallyDrop` instead of `mem::forget`."
+    ),
+    deny!(
+        "mixed_read_write_in_expression",
+        group=Restriction, applicability=Unspecified,
+        reason="Do not use confusing syntax."
+    ),
+    deny!(
+        "modulo_arithmetic",
+        group=Restriction, applicability=Unspecified,
+        reason="Modulo with negative number is hard to understand."
+    ),
+    deny!(
+        "multiple_unsafe_ops_per_block",
+        group=Restriction, applicability=Unspecified,
+        reason="Reduce unsafe block granularity."
+    ),
+    deny!(
+        "pattern_type_mismatch",
+        group=Restriction, applicability=Unspecified,
+        reason="My favorite lint."
+    ),
+    deny!(
+        "rc_buffer",
+        group=Restriction, applicability=Unspecified,
+        reason="`Rc` is readonly."
+    ),
+    deny!(
+        "rc_mutex",
+        group=Restriction, applicability=Unspecified,
+        reason="`Rc<Mutex<T>>` is so wired."
+    ),
+    deny!(
+        "same_name_method",
+        group=Restriction, applicability=Unspecified,
+        reason="Avoid same method name, which is confusing."
+    ),
+    deny!(
+        "str_to_string",
+        group=Restriction, applicability=MachineApplicable,
+        reason="`ToOwned` is more specific."
+    ),
+    deny!(
+        "string_add",
+        group=Restriction, applicability=Unspecified,
+        reason="Prefer `String::push_str` than `+=`."
+    ),
+    deny!(
+        "string_to_string",
+        group=Restriction, applicability=Unspecified,
+        reason="Correct semantics."
+    ),
+    deny!(
+        "try_err",
+        group=Restriction, applicability=MachineApplicable,
+        reason="Explicit return `Err`."
+    ),
+    deny!(
+        "unneeded_field_pattern",
+        group=Restriction, applicability=Unspecified,
+        reason="More concise."
+    ),
+    deny!(
+        "unused_result_ok",
+        group=Restriction, applicability=MaybeIncorrect,
+        reason="Avoid unnecessary"
+    ),
+    deny!(
+        "verbose_file_reads",
+        group=Restriction, applicability=Unspecified,
+        reason="More concise."
+    ),
+
+    warn!(
+        "decimal_literal_representation",
+        group=Restriction, applicability=MaybeIncorrect,
+        reason="Hexadecimal representation sometimes is more readable than a decimal representation."
+    ),
+    warn!(
+        "undocumented_unsafe_blocks",
+        group=Restriction, applicability=Unspecified,
+        reason="Improve readability."
+    ),
 
     // endregion:restriction
 ];
