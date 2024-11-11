@@ -482,4 +482,31 @@ pub const CLIPPY_ARGS: &[&str] = &[
     ),
 
     // endregion:restriction
+
+    // region:cargo
+
+    // deny!(
+    //     "cargo_common_metadata",
+    //     group=Cargo, applicability=Unspecified,
+    //     reason="Only need when publish crate."
+    // ),
+
+    deny!(
+        "negative_feature_names",
+        group=Cargo, applicability=Unspecified,
+        reason="Avoid negatively name in features."
+    ),
+    deny!(
+        "redundant_feature_names",
+        group=Cargo, applicability=Unspecified,
+        reason="These prefixes and suffixes have no significant meaning."
+    ),
+    deny!(
+        "wildcard_dependencies",
+        group=Cargo, applicability=Unspecified,
+        reason="Wildcard dependencies is useless."
+    ),
+
+    // endregion:cargo
+
 ];
