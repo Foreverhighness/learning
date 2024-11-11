@@ -6,6 +6,8 @@ xflags::xflags! {
 
     cmd xtask {
         cmd clean {}
+
+        cmd clippy {}
     }
 }
 // generated start
@@ -19,10 +21,14 @@ pub struct Xtask {
 #[derive(Debug)]
 pub enum XtaskCmd {
     Clean(Clean),
+    Clippy(Clippy),
 }
 
 #[derive(Debug)]
 pub struct Clean;
+
+#[derive(Debug)]
+pub struct Clippy;
 
 impl Xtask {
     #[allow(dead_code)]

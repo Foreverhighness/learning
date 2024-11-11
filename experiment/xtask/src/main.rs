@@ -4,6 +4,9 @@ use std::sync::LazyLock;
 use walkdir::WalkDir;
 use xshell::{cmd, Shell};
 
+use crate::clippy::CLIPPY_ARGS;
+
+mod clippy;
 mod flags;
 
 static WORKSPACE_PATH: LazyLock<&Path> = LazyLock::new(|| {
@@ -44,6 +47,7 @@ fn main() -> xshell::Result<()> {
             // cargo clean at workspace
             cmd!(sh, "cargo clean").run()?;
         }
+        flags::XtaskCmd::Clippy(_) => cmd!(sh, "cargo clippy -- {CLIPPY_ARGS...}").run()?,
     }
 
     Ok(())
