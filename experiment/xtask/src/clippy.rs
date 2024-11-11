@@ -1,4 +1,4 @@
-//! lints from https://rust-lang.github.io/rust-clippy/rust-1.82.0/index.html
+//! lints from <https://rust-lang.github.io/rust-clippy/rust-1.82.0/index.html>
 
 enum LintGroup {
     // Cargo,
@@ -58,7 +58,7 @@ macro_rules! deny {
     }};
 }
 
-pub(crate) const CLIPPY_ARGS: &[&str] = &[
+pub const CLIPPY_ARGS: &[&str] = &[
     deny!(
         "all",
         reason="Deny `all` default lints for better life! (correctness, suspicious, style, complexity, perf)"
@@ -272,24 +272,9 @@ pub(crate) const CLIPPY_ARGS: &[&str] = &[
         reason="Always prefer const fn, but it is annoying."
     ),
     warn!(
-        "option_if_let_else",
-        group=Nursery, applicability=MaybeIncorrect,
-        reason="Optimize to one line, may reduce readability."
-    ),
-    warn!(
         "or_fun_call",
         group=Nursery, applicability=HasPlaceholders,
         reason="`or` is more intuitive, but most of time we should use `or_else`."
-    ),
-    warn!(
-        "redundant_clone",
-        group=Nursery, applicability=MachineApplicable,
-        reason="Too many false positive."
-    ),
-    warn!(
-        "string_lit_as_bytes",
-        group=Nursery, applicability=MachineApplicable,
-        reason="Too many false positive."
     ),
     warn!(
         "suboptimal_flops",
@@ -316,6 +301,21 @@ pub(crate) const CLIPPY_ARGS: &[&str] = &[
         "while_float",
         group=Nursery, applicability=Unspecified,
         reason="Immature lint."
+    ),
+    allow!(
+        "option_if_let_else",
+        group=Nursery, applicability=MaybeIncorrect,
+        reason="Greatly reduce readability."
+    ),
+    allow!(
+        "redundant_clone",
+        group=Nursery, applicability=MachineApplicable,
+        reason="Too many false positive."
+    ),
+    allow!(
+        "string_lit_as_bytes",
+        group=Nursery, applicability=MachineApplicable,
+        reason="Too many false positive."
     ),
 
     // endregion:nursery

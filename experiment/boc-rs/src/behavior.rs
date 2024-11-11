@@ -23,12 +23,12 @@ pub mod basic {
         /// this method restrict that Request should not contains any generic?
         fn last(&self) -> &AtomicPtr<Request>;
 
-        /// substitute last method to not expose AtomicPtr
+        /// substitute last method to not expose `AtomicPtr`
         fn last_swap(&self, ptr: *mut Request, order: Ordering) -> *mut Request {
             self.last().swap(ptr, order)
         }
 
-        /// substitute last method to not expose AtomicPtr
+        /// substitute last method to not expose `AtomicPtr`
         fn last_compare_exchange(
             &self,
             current: *mut Request,
@@ -89,7 +89,7 @@ pub mod basic {
         _last: PhantomData<Arc<AtomicPtr<Behavior>>>,
     }
 
-    /// Safety: We only use CownHolder to access AtomicPtr
+    /// Safety: We only use `CownHolder` to access `AtomicPtr`
     unsafe impl Send for CownHolder {}
 
     impl Debug for CownHolder {
@@ -215,7 +215,7 @@ pub mod basic {
 
     #[derive(Debug)]
     pub struct Request {
-        /// use to call next resolve_one()
+        /// use to call next `resolve_one()`
         next: AtomicPtr<Behavior>,
 
         /// two phase locking
@@ -227,15 +227,15 @@ pub mod basic {
 
     impl Request {
         /// Creates a new Request.
-        fn new<T: Send + 'static>(target: CownPtr<T>) -> Request {
-            Request {
+        fn new<T: Send + 'static>(target: CownPtr<T>) -> Self {
+            Self {
                 next: AtomicPtr::new(ptr::null_mut()),
                 scheduled: AtomicBool::new(false),
                 target: CownHolder::new(target),
             }
         }
 
-        /// start_enqueue can executed parallel, so we need shared ref on behavior
+        /// `start_enqueue` can executed parallel, so we need shared ref on behavior
         /// but the self ref may be exclusive?
         fn start_enqueue(&self, behavior: &Behavior) {
             let prev_req = self
@@ -331,7 +331,7 @@ pub mod basic {
             f.debug_struct("Behavior")
                 .field("count", &self.count)
                 .field("requests", &self.requests)
-                .finish()
+                .finish_non_exhaustive()
         }
     }
 
@@ -342,7 +342,7 @@ pub mod basic {
 
             self.requests.iter().for_each(|req| req.start_enqueue(self));
 
-            self.requests.iter().for_each(|req| req.finish_enqueue());
+            self.requests.iter().for_each(Request::finish_enqueue);
 
             self.resolve_one();
             // eprintln!("schedule over: addr {:?} {self:?}", &raw const *self);
@@ -374,7 +374,7 @@ pub mod basic {
             let count = AtomicUsize::new(requests.len() + 1);
 
             let routine = Box::new(move || f(cowns.get_mut()));
-            PinnedBehavior(Box::pin(Behavior {
+            Self(Box::pin(Behavior {
                 routine,
                 count,
                 requests,
@@ -395,7 +395,7 @@ pub mod basic {
             runtime::spawn(move || {
                 (behavior.routine)();
 
-                behavior.requests.iter().for_each(|req| req.release());
+                behavior.requests.iter().for_each(Request::release);
             });
         }
 

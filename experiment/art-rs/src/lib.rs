@@ -60,6 +60,7 @@ pub struct PixelGenerator {
 }
 
 impl PixelGenerator {
+    #[must_use]
     pub fn new(width: usize, height: usize, radius: isize, probability: u32, seed: u64) -> Self {
         Self {
             colors: core::array::from_fn(|_| ColorMap::new(width, height)),

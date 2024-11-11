@@ -108,7 +108,7 @@ mod boc_banking {
 }
 
 mod boc_merge_sort {
-    //! Merge sort using BoC.
+    //! Merge sort using `BoC`.
 
     use crate::*;
 
@@ -329,12 +329,12 @@ mod basic_test {
         runtime::spawn(move || {
             let mut arr1 = vec![2, 3, 1, 4];
             let res1 = boc_merge_sort::merge_sort(arr1.clone());
-            arr1.sort();
+            arr1.sort_unstable();
             assert_eq!(arr1, res1);
 
             let mut arr2 = vec![3, 4, 2, 1, 8, 5, 6, 7];
             let res2 = boc_merge_sort::merge_sort(arr2.clone());
-            arr2.sort();
+            arr2.sort_unstable();
             assert_eq!(arr2, res2);
 
             let res2_ = boc_merge_sort::merge_sort(arr2.clone());
@@ -347,12 +347,12 @@ mod basic_test {
             arr3.append(&mut arr3.clone());
             arr3.append(&mut arr3.clone());
             let res3 = boc_merge_sort::merge_sort(arr3.clone());
-            arr3.sort();
+            arr3.sort_unstable();
             assert_eq!(arr3, res3);
 
             let mut arr4: Vec<_> = (0..1024).rev().collect();
             let res4 = boc_merge_sort::merge_sort(arr4.clone());
-            arr4.sort();
+            arr4.sort_unstable();
             assert_eq!(arr4, res4);
 
             send_finish.send(()).unwrap();

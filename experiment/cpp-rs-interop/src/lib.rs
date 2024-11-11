@@ -16,11 +16,3 @@ pub extern "C" fn Rust_write_comment(user: &mut UserC, comment: *const u8, comme
 
     user.comments_count += 1;
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {}
-}

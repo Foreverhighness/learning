@@ -26,7 +26,7 @@ impl Debug for NodeWithoutValue {
 
 impl NodeWithoutValue {
     pub fn new_box() -> Box<dyn TrieNode> {
-        Box::<NodeWithoutValue>::default()
+        Box::new(Self::default())
     }
 
     pub fn with_children(children: Children) -> Box<dyn TrieNode> {

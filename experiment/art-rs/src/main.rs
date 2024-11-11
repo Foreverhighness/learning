@@ -5,7 +5,7 @@ use clap::{arg, command, Parser};
 
 const DEFAULT_WIDTH: u16 = 1024;
 const DEFAULT_HEIGHT: u16 = 1024;
-const DEFAULT_RADIUS: u16 = 1;
+const DEFAULT_RADIUS: i16 = 1;
 const DEFAULT_PROBABILITY: u32 = 100;
 const SCALE_FACTOR: i64 = SCALE_FACTOR_U32 as _;
 
@@ -21,8 +21,8 @@ struct Cli {
     height: u16,
 
     /// The radius of random walk
-    #[arg(short, long, default_value_t = DEFAULT_RADIUS, value_parser = clap::value_parser!(u16).range(1..))]
-    radius: u16,
+    #[arg(short, long, default_value_t = DEFAULT_RADIUS, value_parser = clap::value_parser!(i16).range(1..))]
+    radius: i16,
 
     /// The probability to generate one pixel, scale by a factor of 100000, means 1000 -> 1%,
     /// default 100 -> 0.1%

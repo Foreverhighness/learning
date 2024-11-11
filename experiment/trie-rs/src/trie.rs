@@ -40,7 +40,7 @@ impl Trie {
     }
 
     pub fn new() -> Self {
-        Trie::default()
+        Self::default()
     }
 
     pub fn get<T: 'static>(&self, key: &str) -> Option<&T> {

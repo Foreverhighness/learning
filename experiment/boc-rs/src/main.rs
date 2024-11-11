@@ -105,6 +105,10 @@ fn merge_sort_inner(
 }
 
 /// Sorts and returns a sorted version of `array`.
+///
+/// # Panics
+///
+/// No panic
 // TODO: We could make this generic over `T : Ord + Send`, but it might also need `Default` or
 // usage of `MabyeUninit`.
 pub fn merge_sort(array: Vec<usize>) -> Vec<usize> {

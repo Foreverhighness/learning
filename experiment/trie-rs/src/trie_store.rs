@@ -16,7 +16,7 @@ impl<T> ValueGuard<'_, T>
 where
     T: NodeValueMarkerTrait,
 {
-    fn new(root: Trie, value: NonNull<T>) -> Self {
+    const fn new(root: Trie, value: NonNull<T>) -> Self {
         let value = unsafe { value.as_ref() };
         Self { _root: root, value }
     }
@@ -41,7 +41,7 @@ pub struct TrieStore {
 
 impl TrieStore {
     pub fn new() -> Self {
-        TrieStore::default()
+        Self::default()
     }
 
     pub fn get<T>(&self, key: &str) -> Option<ValueGuard<T>>

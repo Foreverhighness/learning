@@ -1,5 +1,5 @@
 //! Command Line
-//! copy from https://github.com/rust-lang/rust-analyzer/blob/master/xtask/src/flags.rs
+//! copy from <https://github.com/rust-lang/rust-analyzer/blob/master/xtask/src/flags.rs>
 
 xflags::xflags! {
     src "./src/flags.rs"

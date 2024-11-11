@@ -54,6 +54,7 @@ impl Display for BorrowMutError {
 #[inline(never)]
 #[track_caller]
 #[cold]
+#[allow(clippy::needless_pass_by_value)]
 fn panic_already_borrowed(err: BorrowMutError) -> ! {
     panic!("already borrowed: {:?}", err)
 }
@@ -62,6 +63,7 @@ fn panic_already_borrowed(err: BorrowMutError) -> ! {
 #[inline(never)]
 #[track_caller]
 #[cold]
+#[allow(clippy::needless_pass_by_value)]
 fn panic_already_mutably_borrowed(err: BorrowError) -> ! {
     panic!("already mutably borrowed: {:?}", err)
 }
@@ -87,13 +89,15 @@ fn panic_already_mutably_borrowed(err: BorrowError) -> ! {
 type BorrowFlag = isize;
 const UNUSED: BorrowFlag = 0;
 
+#[allow(clippy::inline_always)]
 #[inline(always)]
-fn is_writing(x: BorrowFlag) -> bool {
+const fn is_writing(x: BorrowFlag) -> bool {
     x < UNUSED
 }
 
+#[allow(clippy::inline_always)]
 #[inline(always)]
-fn is_reading(x: BorrowFlag) -> bool {
+const fn is_reading(x: BorrowFlag) -> bool {
     x > UNUSED
 }
 
@@ -135,7 +139,7 @@ impl AtomicLocation {
     /// Sets the contained value.
     fn set(&self, val: Option<&'static Location<'static>>) {
         self.0.store(
-            val.map_or(ptr::null_mut(), |r| r as *const _ as _),
+            val.map_or(ptr::null_mut(), |r| core::ptr::from_ref(r) as _),
             Ordering::Relaxed,
         );
     }
@@ -205,6 +209,14 @@ impl<T: ?Sized> SyncRefCell<T> {
     /// taken out at the same time.
     ///
     /// This is the non-panicking variant of [`borrow`](#method.borrow).
+    ///
+    /// # Panics
+    ///
+    /// No panic
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if already borrowed mut
     #[inline]
     #[track_caller]
     pub fn try_borrow(&self) -> Result<Ref<'_, T>, BorrowError> {
@@ -256,6 +268,14 @@ impl<T: ?Sized> SyncRefCell<T> {
     /// active.
     ///
     /// This is the non-panicking variant of [`borrow_mut`](#method.borrow_mut).
+    ///
+    /// # Panics
+    ///
+    /// No panic
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if already borrowed
     #[inline]
     #[track_caller]
     pub fn try_borrow_mut(&self) -> Result<RefMut<'_, T>, BorrowMutError> {
@@ -282,7 +302,7 @@ impl<T: ?Sized> SyncRefCell<T> {
     }
 
     /// Returns a raw pointer to the underlying data in this cell.
-    pub fn as_ptr(&self) -> *mut T {
+    pub const fn as_ptr(&self) -> *mut T {
         self.value.get()
     }
 }
@@ -299,7 +319,7 @@ impl<T: Debug> Debug for SyncRefCell<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("TracedRefCell")
             .field("value", &self.value)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -322,9 +342,16 @@ struct BorrowRef<'b> {
 
 impl<'b> BorrowRef<'b> {
     #[inline]
-    fn new(borrow: &'b AtomicBorrowFlag) -> Option<BorrowRef<'b>> {
+    fn new(borrow: &'b AtomicBorrowFlag) -> Option<Self> {
         let b = borrow.get().wrapping_add(1);
-        if !is_reading(b) {
+        if is_reading(b) {
+            // Incrementing borrow can result in a reading value (> 0) in these cases:
+            // 1. It was = 0, i.e. it wasn't borrowed, and we are taking the first read borrow
+            // 2. It was > 0 and < isize::MAX, i.e. there were read borrows, and isize is large
+            //    enough to represent having one more read borrow
+            borrow.set(b);
+            Some(Self { borrow })
+        } else {
             // Incrementing borrow can result in a non-reading value (<= 0) in these cases:
             // 1. It was < 0, i.e. there are writing borrows, so we can't allow a read borrow due to
             //    Rust's reference aliasing rules
@@ -334,13 +361,6 @@ impl<'b> BorrowRef<'b> {
             //    happen if you mem::forget more than a small constant amount of `Ref`s, which is
             //    not good practice)
             None
-        } else {
-            // Incrementing borrow can result in a reading value (> 0) in these cases:
-            // 1. It was = 0, i.e. it wasn't borrowed, and we are taking the first read borrow
-            // 2. It was > 0 and < isize::MAX, i.e. there were read borrows, and isize is large
-            //    enough to represent having one more read borrow
-            borrow.set(b);
-            Some(Self { borrow })
         }
     }
 }
@@ -409,7 +429,7 @@ impl<'b, T: ?Sized> Ref<'b, T> {
     /// a `RefCell`.
     #[must_use]
     #[inline]
-    pub fn clone(orig: &Ref<'b, T>) -> Ref<'b, T> {
+    pub fn clone(orig: &Self) -> Self {
         Ref {
             value: orig.value,
             borrow: orig.borrow.clone(),
@@ -435,7 +455,7 @@ impl<'b, T: ?Sized> Ref<'b, T> {
     /// assert_eq!(*b2, 5)
     /// ```
     #[inline]
-    pub fn map<U: ?Sized, F>(orig: Ref<'b, T>, f: F) -> Ref<'b, U>
+    pub fn map<U: ?Sized, F>(orig: Self, f: F) -> Ref<'b, U>
     where
         F: FnOnce(&T) -> &U,
     {
@@ -466,7 +486,7 @@ impl<'b, T: ?Sized> Ref<'b, T> {
     /// assert_eq!(*b2.unwrap(), 2);
     /// ```
     #[inline]
-    pub fn filter_map<U: ?Sized, F>(orig: Ref<'b, T>, f: F) -> Result<Ref<'b, U>, Self>
+    pub fn filter_map<U: ?Sized, F>(orig: Self, f: F) -> Result<Ref<'b, U>, Self>
     where
         F: FnOnce(&T) -> Option<&U>,
     {
@@ -500,7 +520,7 @@ impl<'b, T: ?Sized> Ref<'b, T> {
     /// assert_eq!(*end, [3, 4]);
     /// ```
     #[inline]
-    pub fn map_split<U: ?Sized, V: ?Sized, F>(orig: Ref<'b, T>, f: F) -> (Ref<'b, U>, Ref<'b, V>)
+    pub fn map_split<U: ?Sized, V: ?Sized, F>(orig: Self, f: F) -> (Ref<'b, U>, Ref<'b, V>)
     where
         F: FnOnce(&T) -> (&U, &V),
     {
@@ -538,7 +558,7 @@ impl Drop for BorrowRefMut<'_> {
 
 impl<'b> BorrowRefMut<'b> {
     #[inline]
-    fn new(borrow: &'b AtomicBorrowFlag) -> Option<BorrowRefMut<'b>> {
+    fn new(borrow: &'b AtomicBorrowFlag) -> Option<Self> {
         // NOTE: Unlike BorrowRefMut::clone, new is called to create the initial
         // mutable reference, and so there must currently be no existing
         // references. Thus, while clone increments the mutable refcount, here
@@ -558,7 +578,7 @@ impl<'b> BorrowRefMut<'b> {
     // reference to a distinct, nonoverlapping range of the original object.
     // This isn't in a Clone impl so that code doesn't call this implicitly.
     #[inline]
-    fn clone(&self) -> BorrowRefMut<'b> {
+    fn clone(&self) -> Self {
         let borrow = self.borrow.get();
         debug_assert!(is_writing(borrow));
         // Prevent the borrow counter from underflowing.
@@ -632,7 +652,7 @@ impl<'b, T: ?Sized> RefMut<'b, T> {
     /// assert_eq!(*c.borrow(), (42, 'b'));
     /// ```
     #[inline]
-    pub fn map<U: ?Sized, F>(mut orig: RefMut<'b, T>, f: F) -> RefMut<'b, U>
+    pub fn map<U: ?Sized, F>(mut orig: Self, f: F) -> RefMut<'b, U>
     where
         F: FnOnce(&mut T) -> &mut U,
     {
@@ -673,7 +693,7 @@ impl<'b, T: ?Sized> RefMut<'b, T> {
     /// assert_eq!(*c.borrow(), vec![1, 4, 3]);
     /// ```
     #[inline]
-    pub fn filter_map<U: ?Sized, F>(mut orig: RefMut<'b, T>, f: F) -> Result<RefMut<'b, U>, Self>
+    pub fn filter_map<U: ?Sized, F>(mut orig: Self, f: F) -> Result<RefMut<'b, U>, Self>
     where
         F: FnOnce(&mut T) -> Option<&mut U>,
     {
@@ -718,7 +738,7 @@ impl<'b, T: ?Sized> RefMut<'b, T> {
     /// ```
     #[inline]
     pub fn map_split<U: ?Sized, V: ?Sized, F>(
-        mut orig: RefMut<'b, T>,
+        mut orig: Self,
         f: F,
     ) -> (RefMut<'b, U>, RefMut<'b, V>)
     where
