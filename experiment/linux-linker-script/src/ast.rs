@@ -111,11 +111,10 @@ impl OutputFormat {
     }
 
     fn parse(command: Pair<'_, Rule>) -> OutputFormat {
-        match command.as_rule() {
-            Rule::OutputFormat => {
-                todo!()
-            }
-            _ => unreachable!(),
+        assert!(matches!(command.as_rule(), Rule::OutputFormat));
+
+        Self {
+            binary_file_descriptor_name: command.into_inner().next().unwrap().as_str().to_owned(),
         }
     }
 }
@@ -123,7 +122,7 @@ impl OutputFormat {
 impl Command {
     pub fn to_string_with_indent(&self, indent: usize) -> String {
         match &self {
-            Command::Macro => todo!(),
+            Command::Macro => String::from("TODO Macro"),
             Command::OutputFormat(output_format) => output_format.to_string_with_indent(0),
             Command::OutputArch(output_arch) => output_arch.to_string_with_indent(0),
             Command::Entry(entry) => entry.to_string_with_indent(0),
@@ -210,16 +209,12 @@ impl Phdr {
 
     fn parse(command: Pair<'_, Rule>) -> Phdr {
         assert!(matches!(command.as_rule(), Rule::PHDRS_inner));
-        let phdr = command.into_inner();
+        let mut header = command.into_inner();
 
-        let name = phdr.find_first_tagged("name").unwrap().as_str().to_owned();
-        let ty = phdr.find_first_tagged("ty").unwrap().as_str().to_owned();
-        let flags = phdr
-            .find_first_tagged("flag")
-            .map(|pair| pair.as_str().to_owned());
-        let t = Phdr { name, ty, flags };
-        eprintln!("{}", t.to_string_with_indent(0));
-        t
+        let name = header.next().unwrap().as_str().to_owned();
+        let ty = header.next().unwrap().as_str().to_owned();
+        let flags = header.next().map(|pair| pair.as_str().to_owned());
+        Phdr { name, ty, flags }
     }
 }
 
@@ -250,7 +245,7 @@ impl Sections {
 impl SectionsCommand {
     pub fn to_string_with_indent(&self, indent: usize) -> String {
         match self {
-            SectionsCommand::Macro => todo!(),
+            SectionsCommand::Macro => String::from("TODO Macro"),
             SectionsCommand::Entry(entry) => entry.to_string_with_indent(indent),
             SectionsCommand::SymbolAssignment(symbol_assignment) => {
                 symbol_assignment.to_string_with_indent(indent)
@@ -320,33 +315,31 @@ impl OutputSectionDescription {
     fn parse(command: Pair<'_, Rule>) -> Self {
         assert!(matches!(command.as_rule(), Rule::OutputSectionDescription));
 
-        let inner = command.into_inner();
-        let section = inner
-            .find_first_tagged("section")
-            .unwrap()
-            .as_str()
-            .to_owned();
-        let address = inner
-            .find_first_tagged("address")
-            .map(|x| x.as_str().to_owned());
-        let ty = inner.find_first_tagged("ty").map(|x| x.as_str().to_owned());
-        let at = inner.find_first_tagged("at").map(|x| x.as_str().to_owned());
-        let align = inner
-            .find_first_tagged("align")
-            .map(|x| x.as_str().to_owned());
-        let commands = inner
-            .clone()
-            .find_tagged("commands")
-            .map(OutputSectionCommand::parse)
-            .collect();
-        let phdrs = inner
-            .clone()
-            .find_tagged("phdrs")
-            .map(|x| x.as_str().to_owned())
-            .collect();
-        let fill_expr = inner
-            .find_first_tagged("fillexp")
-            .map(|x| x.as_str().to_owned());
+        let mut inner = command.into_inner();
+
+        let section = inner.next().unwrap().as_str().to_owned();
+        let mut address = None;
+        let mut ty = None;
+        let mut at = None;
+        let mut align = None;
+        let mut commands = Vec::new();
+        let mut phdrs = Vec::new();
+        let mut fill_expr = None;
+        for pair in inner {
+            match pair.as_rule() {
+                Rule::expr => address = Some(pair.as_str().to_owned()),
+                Rule::ident => ty = Some(pair.as_str().to_owned()),
+                Rule::AtAddress => at = Some(pair.as_str().to_owned()),
+                Rule::align => align = Some(pair.as_str().to_owned()),
+                Rule::unused_marcos
+                | Rule::symbol_assignment
+                | Rule::OutputSectionData
+                | Rule::InputSectionDescription => commands.push(OutputSectionCommand::parse(pair)),
+                Rule::OutputSectionPhdr => phdrs.push(pair.as_str().to_owned()),
+                Rule::constants => fill_expr = Some(pair.as_str().to_owned()),
+                _ => unreachable!(),
+            }
+        }
 
         Self {
             section,
@@ -364,7 +357,7 @@ impl OutputSectionDescription {
 impl OutputSectionCommand {
     pub fn to_string_with_indent(&self, indent: usize) -> String {
         match self {
-            OutputSectionCommand::Macro => todo!(),
+            OutputSectionCommand::Macro => String::from("TODO: Macro"),
             OutputSectionCommand::SymbolAssignment(symbol_assignment) => {
                 symbol_assignment.to_string_with_indent(indent)
             }

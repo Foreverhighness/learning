@@ -30,7 +30,7 @@ PHDRS_inner = { #name = ident ~ #ty = ident ~ ("FLAGS" ~ "(" ~ #flags = integer 
 /// sections-command
 /// …
 /// }
-Sections        = { "SECTIONS" ~ "{" ~ SectionsCommand* ~ "}" }
+Sections        =  { "SECTIONS" ~ "{" ~ SectionsCommand* ~ "}" }
 SectionsCommand = _{ unused_marcos | Entry | symbol_assignment | OutputSectionDescription }
 
 AtAddress = { "AT(" ~ expr ~ ")" }
@@ -49,11 +49,12 @@ AtAddress = { "AT(" ~ expr ~ ")" }
 OutputSectionDescription = {
     #section = section ~ #address = expr? ~ #ty = ("(" ~ ident ~ ")")? ~ ":" //
   ~ #at = AtAddress? //
-  ~ #align = ("ALIGN(" ~ expr ~ ")")? //
+  ~ #align = align? //
   ~ "{" //
   ~ #commands = OutputSectionCommand* //
-  ~ "}" ~ #phdrs = (":" ~ ident)* ~ #fillexp = ("=" ~ constants)?
+  ~ "}" ~ #phdrs = OutputSectionPhdr* ~ #fillexp = ("=" ~ constants)?
 }
+OutputSectionPhdr        = { ":" ~ ident }
 
 /// Each output-section-command may be one of the following:
 /// - a symbol assignment
@@ -71,9 +72,9 @@ FilenameWildcard        = _{ "*" | #filename = ident }
 SectionWildcard         = _{ section ~ "*"? }
 SectionWildcardSort     = _{ "SORT(" ~ SectionWildcard ~ ")" }
 InputSection            = _{ FilenameWildcard ~ "(" ~ (SectionWildcardSort | SectionWildcard)+ ~ ")" }
-InputSectionDescription = { ("KEEP(" ~ InputSection+ ~ ")") | InputSection ~ ";"? }
-OutputSectionData       = { Byte }
-Byte                    = { "BYTE(" ~ expr ~ ")" ~ ";" }
+InputSectionDescription =  { ("KEEP(" ~ InputSection+ ~ ")") | InputSection ~ ";"? }
+OutputSectionData       =  { Byte }
+Byte                    =  { "BYTE(" ~ expr ~ ")" ~ ";" }
 
 symbol_assignment = { symbol ~ ("+=" | "=") ~ expr ~ ";" }
 // Unless quoted, symbol names start with a letter, underscore, or period and may include letters, digits, underscores, periods, and hyphens.
@@ -112,7 +113,7 @@ ARM_KEEP       = _{ ARM_MACRO ~ "_KEEP(" ~ InputSectionDescription+ ~ ")" }
 HEAD_SYMBOLS   = _{ "HEAD_SYMBOLS" }
 
 bfdname = @{ ("_" | "-" | ":" | ASCII_ALPHANUMERIC)+ }
-bfdarch = _{ bfdname }
+bfdarch =  { bfdname }
 
 string = ${ "\"" ~ inner ~ "\"" }
 inner  = @{ char* }
