@@ -1,0 +1,126 @@
+LinkerScript = {
+    // SOI ~ OutputFormat? ~ OutputArch ~ Entry ~ Statement* ~ Sections+ ~ EOI
+    SOI ~ Command* ~ EOI
+}
+
+COMMENT    = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+Command      = _{ unused_marcos | OutputFormat | OutputArch | Entry | PHDRS | Sections | symbol_assignment }
+OutputFormat =  { "OUTPUT_FORMAT(" ~ (bfdname | (#default = bfdname ~ "," ~ #big = bfdname ~ "," ~ #little = bfdname)) ~ ")" }
+OutputArch   =  { "OUTPUT_ARCH(" ~ bfdarch ~ ")" }
+Entry        =  { "ENTRY(" ~ symbol ~ ")" }
+
+/// PHDRS {
+/// name type [ FILEHDR ] [ PHDRS ] [ AT ( address ) ]
+/// [ FLAGS ( flags ) ] ;
+/// }
+PHDRS       = {
+    "PHDRS" ~ "{" //
+  // TODO: ~ FILEHDR? ~  PHDRS?  ~ AtAddress? ~ FLAGS ( flags )
+  ~ PHDRS_inner* //
+  ~ "}"
+}
+PHDRS_inner = { ident ~ ident ~ "FLAGS" ~ "(" ~ integer ~ ")" ~ ";" }
+
+/// The format of the SECTIONS command is:
+/// SECTIONS
+/// {
+/// sections-command
+/// sections-command
+/// …
+/// }
+Sections = {
+    "SECTIONS" ~ "{" //
+  ~ (unused_marcos | Entry | symbol_assignment | OutputSectionDescription)* //
+  ~ "}"
+}
+
+AtAddress = { "AT(" ~ expr ~ ")" }
+
+/// https://sourceware.org/binutils/docs/ld/Output-Section-Description.html
+/// section [address] [(type)] :
+/// [AT(lma)]
+/// [ALIGN(section_align) | ALIGN_WITH_INPUT]
+/// [SUBALIGN(subsection_align)]
+/// [constraint]
+/// {
+/// output-section-command
+/// output-section-command
+/// …
+/// } [>region] [AT>lma_region] [:phdr :phdr …] [=fillexp] [,]
+OutputSectionDescription = {
+    section ~ expr? ~ ("(" ~ ident ~ ")")? ~ ":" //
+  ~ AtAddress? //
+  ~ ("ALIGN(" ~ expr ~ ")")? //
+  ~ "{" //
+  ~ OutputSectionCommand* //
+  ~ "}" ~ (":" ~ ident)* ~ ("=" ~ constants)?
+}
+
+/// Each output-section-command may be one of the following:
+/// - a symbol assignment
+/// - an input section description
+/// - data values to include directly
+/// - a special output section keyword
+OutputSectionCommand = {
+    unused_marcos
+  | symbol_assignment
+  | OutputSectionData
+  | InputSectionDescription
+}
+
+FilenameWildcard        = { "*" | #filename = ident }
+SectionWildcard         = { section ~ "*"? }
+SectionWildcardSort     = { "SORT(" ~ SectionWildcard ~ ")" }
+InputSection            = { FilenameWildcard ~ "(" ~ (SectionWildcardSort | SectionWildcard)+ ~ ")" }
+InputSectionDescription = { ("KEEP(" ~ InputSection+ ~ ")") | InputSection ~ ";"? }
+OutputSectionData       = { Byte }
+Byte                    = { "BYTE(" ~ expr ~ ")" ~ ";" }
+
+symbol_assignment = { symbol ~ ("+=" | "=") ~ expr ~ ";" }
+// Unless quoted, symbol names start with a letter, underscore, or period and may include letters, digits, underscores, periods, and hyphens.
+ident  = @{ ("_" | "." | ASCII_ALPHA) ~ ("_" | "-" | "." | "$" | ASCII_ALPHANUMERIC)+ }
+symbol = @{ "." | ident }
+
+primary     = _{ constants | buildin_fn | symbol | "(" ~ expr ~ ")" }
+atom        = _{ unary_op? ~ primary }
+unary_op    = _{ "-" | "~" }
+binary_op   = _{ "+" | "-" | "*" | "&" | "==" | "<=" | "||" | "<<" | ">>" }
+expr        =  { atom ~ (binary_op ~ atom)* }
+decimal     = @{ ASCII_DIGIT+ }
+octal       = @{ "0" ~ ASCII_OCT_DIGIT+ }
+hexadecimal = @{ ("0x" | "0X") ~ ASCII_HEX_DIGIT+ }
+integer     =  { hexadecimal | octal | decimal }
+// the linker considers an integer beginning with ` 0 ' to be octal, and an integer beginning with ` 0x ' or ` 0X ' to be hexadecimal.
+// The linker considers other integers to be decimal.
+// In addition, you can use the suffixes ` K ' and ` M ' to scale a constant by ` 1024 ' or ` 1024*1024 ' respectively.
+constants  = @{ ("0" ~ integer) | (("0x" | "0X") ~ integer) | (integer ~ ("K" | "M")?) }
+buildin_fn = _{ absolute | addr | align | defined | sizeof }
+absolute   = _{ "ABSOLUTE(" ~ expr ~ ")" }
+addr       = _{ "ADDR(" ~ section ~ ")" }
+align      = _{ "ALIGN(" ~ expr ~ ("," ~ expr)? ~ ")" }
+defined    = _{ "DEFINED(" ~ symbol ~ ")" }
+sizeof     = _{ "SIZEOF(" ~ section ~ ")" }
+section    = @{ ("/" | "_" | "." | "-" | "+" | ASCII_ALPHANUMERIC)+ }
+
+unused_marcos  =  { special_assert | ARM_MACROS | ASSERT | OF_TABLE | CONSTRUCTIONRS }
+OF_TABLE       = _{ "_OF_TABLE_IS_ENABLED(" ~ (!")" ~ ANY)* ~ ")" ~ "(" ~ (!")" ~ ANY)* ~ ")" }
+CONSTRUCTIONRS = _{ "CONSTRUCTORS" }
+special_assert = _{ "." ~ "=" ~ ASSERT ~ ";" }
+ASSERT         = _{ "ASSERT(" ~ expr ~ "," ~ string ~ ")" }
+ARM_MACROS     = _{ ARM_KEEP | ARM_MACRO | HEAD_SYMBOLS }
+ARM_MACRO      = @{ "ARM_" ~ ASCII_ALPHA_UPPER+ }
+ARM_KEEP       = _{ ARM_MACRO ~ "_KEEP(" ~ InputSectionDescription+ ~ ")" }
+HEAD_SYMBOLS   = _{ "HEAD_SYMBOLS" }
+
+bfdname = @{ ("_" | "-" | ":" | ASCII_ALPHANUMERIC)+ }
+bfdarch = _{ bfdname }
+
+string = ${ "\"" ~ inner ~ "\"" }
+inner  = @{ char* }
+char   =  {
+    !("\"" | "\\") ~ ANY
+  | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+  | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}

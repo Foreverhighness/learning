@@ -1,0 +1,40 @@
+LinkerScript = _{
+    SOI ~ OutputFormat? ~ OutputArch ~ Entry ~ Statement* ~ Sections+ ~ EOI
+}
+
+OutputFormat = { "OUTPUT_FORMAT(" ~ ASCII_ALPHANUMERIC+ ~ ")" }
+OutputArch   = { "OUTPUT_ARCH(" ~ ASCII_ALPHANUMERIC+ ~ ")" }
+Entry        = { "ENTRY(" ~ ("_" | ASCII_ALPHANUMERIC)+ ~ ")" }
+
+Sections          =  { "SECTIONS" ~ "{" ~ (Statement | SectionDefinition | DiscardSection)* ~ "}" }
+SectionDefinition =  { SectionName ~ ":" ~ AtClause? ~ align? ~ "{" ~ SectionContent ~ "}" }
+AtClause          = _{ "AT(" ~ expr ~ ")" }
+SectionContent    =  { (SectionItem | KeepSection | Statement | unused_marcos)* }
+SectionItem       =  { "*" ~ "(" ~ (SectionName ~ "*"?)* ~ ")" }
+DiscardSection    =  { "/DISCARD/" ~ ":" ~ "{" ~ SectionItem* ~ "}" }
+
+KeepSection = { "KEEP" ~ "(" ~ SectionItem* ~ ")" }
+SortInKeep  = { "SORT(" ~ Identifier ~ "+"? ~ "*"? ~ ")" }
+
+Statement = { Symbol ~ "=" ~ expr ~ ";" }
+
+COMMENT    = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+Identifier  = @{ ("_" | ASCII_ALPHA) ~ ("_" | ASCII_ALPHANUMERIC)* ~ "$"? }
+Symbol      = @{ "." | Identifier }
+SectionName = { SortInKeep | ("." | "-" | Identifier)+ ~ "0"? }
+// No whitespace allowed between digits
+integer = @{ ASCII_DIGIT+ }
+
+addr_expr = _{ "ADDR(" ~ SectionName ~ ")" }
+align     = _{ "ALIGN(" ~ primary ~ ")" }
+atom      = _{ addr_expr | align | Symbol | "0x" ~ integer }
+expr      = _{ atom ~ (op ~ atom)* }
+
+primary = _{ integer | Identifier | "(" ~ expr ~ ")" }
+op      = _{ "+" | "-" }
+
+unused_marcos = _{ OF_TABLE | CONSTRUCTIONRS }
+OF_TABLE = _{ "_OF_TABLE_IS_ENABLED(" ~ Identifier+ ~ ")" ~ "(" ~ Identifier+ ~ ")" }
+CONSTRUCTIONRS = _{ "CONSTRUCTORS" }

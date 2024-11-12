@@ -4,6 +4,7 @@ members = [
     "art-rs",
     "boc-rs",
     "cpp-rs-interop",
+    "linux-linker-script",
     "pcre-ffi-rs",
     "thread-local-rs",
     "track-caller-rs",
