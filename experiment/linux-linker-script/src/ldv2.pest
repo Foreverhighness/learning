@@ -7,9 +7,9 @@ COMMENT    = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 
 Command      = _{ unused_marcos | OutputFormat | OutputArch | Entry | PHDRS | Sections | symbol_assignment }
-OutputFormat =  { "OUTPUT_FORMAT(" ~ (bfdname | (#default = bfdname ~ "," ~ #big = bfdname ~ "," ~ #little = bfdname)) ~ ")" }
-OutputArch   =  { "OUTPUT_ARCH(" ~ bfdarch ~ ")" }
-Entry        =  { "ENTRY(" ~ symbol ~ ")" }
+OutputFormat =  { "OUTPUT_FORMAT(" ~ (#format = bfdname | (#default = bfdname ~ "," ~ #big = bfdname ~ "," ~ #little = bfdname)) ~ ")" }
+OutputArch   =  { "OUTPUT_ARCH(" ~ #arch = bfdarch ~ ")" }
+Entry        =  { "ENTRY(" ~ #entry = symbol ~ ")" }
 
 /// PHDRS {
 /// name type [ FILEHDR ] [ PHDRS ] [ AT ( address ) ]
@@ -21,7 +21,7 @@ PHDRS       = {
   ~ PHDRS_inner* //
   ~ "}"
 }
-PHDRS_inner = { ident ~ ident ~ "FLAGS" ~ "(" ~ integer ~ ")" ~ ";" }
+PHDRS_inner = { #name = ident ~ #ty = ident ~ ("FLAGS" ~ "(" ~ #flags = integer ~ ")")? ~ ";" }
 
 /// The format of the SECTIONS command is:
 /// SECTIONS
@@ -30,11 +30,8 @@ PHDRS_inner = { ident ~ ident ~ "FLAGS" ~ "(" ~ integer ~ ")" ~ ";" }
 /// sections-command
 /// …
 /// }
-Sections = {
-    "SECTIONS" ~ "{" //
-  ~ (unused_marcos | Entry | symbol_assignment | OutputSectionDescription)* //
-  ~ "}"
-}
+Sections        = { "SECTIONS" ~ "{" ~ SectionsCommand* ~ "}" }
+SectionsCommand = _{ unused_marcos | Entry | symbol_assignment | OutputSectionDescription }
 
 AtAddress = { "AT(" ~ expr ~ ")" }
 
@@ -50,12 +47,12 @@ AtAddress = { "AT(" ~ expr ~ ")" }
 /// …
 /// } [>region] [AT>lma_region] [:phdr :phdr …] [=fillexp] [,]
 OutputSectionDescription = {
-    section ~ expr? ~ ("(" ~ ident ~ ")")? ~ ":" //
-  ~ AtAddress? //
-  ~ ("ALIGN(" ~ expr ~ ")")? //
+    #section = section ~ #address = expr? ~ #ty = ("(" ~ ident ~ ")")? ~ ":" //
+  ~ #at = AtAddress? //
+  ~ #align = ("ALIGN(" ~ expr ~ ")")? //
   ~ "{" //
-  ~ OutputSectionCommand* //
-  ~ "}" ~ (":" ~ ident)* ~ ("=" ~ constants)?
+  ~ #commands = OutputSectionCommand* //
+  ~ "}" ~ #phdrs = (":" ~ ident)* ~ #fillexp = ("=" ~ constants)?
 }
 
 /// Each output-section-command may be one of the following:
@@ -63,17 +60,17 @@ OutputSectionDescription = {
 /// - an input section description
 /// - data values to include directly
 /// - a special output section keyword
-OutputSectionCommand = {
+OutputSectionCommand = _{
     unused_marcos
   | symbol_assignment
   | OutputSectionData
   | InputSectionDescription
 }
 
-FilenameWildcard        = { "*" | #filename = ident }
-SectionWildcard         = { section ~ "*"? }
-SectionWildcardSort     = { "SORT(" ~ SectionWildcard ~ ")" }
-InputSection            = { FilenameWildcard ~ "(" ~ (SectionWildcardSort | SectionWildcard)+ ~ ")" }
+FilenameWildcard        = _{ "*" | #filename = ident }
+SectionWildcard         = _{ section ~ "*"? }
+SectionWildcardSort     = _{ "SORT(" ~ SectionWildcard ~ ")" }
+InputSection            = _{ FilenameWildcard ~ "(" ~ (SectionWildcardSort | SectionWildcard)+ ~ ")" }
 InputSectionDescription = { ("KEEP(" ~ InputSection+ ~ ")") | InputSection ~ ";"? }
 OutputSectionData       = { Byte }
 Byte                    = { "BYTE(" ~ expr ~ ")" ~ ";" }
@@ -84,7 +81,7 @@ ident  = @{ ("_" | "." | ASCII_ALPHA) ~ ("_" | "-" | "." | "$" | ASCII_ALPHANUME
 symbol = @{ "." | ident }
 
 primary     = _{ constants | buildin_fn | symbol | "(" ~ expr ~ ")" }
-atom        = _{ unary_op? ~ primary }
+atom        =  { unary_op? ~ primary }
 unary_op    = _{ "-" | "~" }
 binary_op   = _{ "+" | "-" | "*" | "&" | "==" | "<=" | "||" | "<<" | ">>" }
 expr        =  { atom ~ (binary_op ~ atom)* }

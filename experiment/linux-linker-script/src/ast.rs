@@ -1,87 +1,86 @@
+use pest::iterators::Pair;
+
+use crate::Rule;
+
 #[derive(Debug)]
-pub enum AstNode {
-    LinkerScript(Vec<Command>),
-    Command(Command),
-    OutputFormat(OutputFormat),
-    OutputArch(OutputArch),
-    Entry(Entry),
-    PHDRS(PHDRS),
-    Sections(Sections),
-    SymbolAssignment(SymbolAssignment),
-    OutputSectionDescription(OutputSectionDescription),
-    // Other variants can be added here for each rule in the grammar
+pub struct LinkerScript {
+    commands: Vec<Command>,
 }
 
 #[derive(Debug)]
-pub struct Command {
-    pub kind: CommandKind,
-}
-
-#[derive(Debug)]
-pub enum CommandKind {
-    UnusedMacros,
+pub enum Command {
+    Macro,
     OutputFormat(OutputFormat),
     OutputArch(OutputArch),
     Entry(Entry),
-    Phdrs(PHDRS),
+    Phdrs(Phdrs),
     Sections(Sections),
     SymbolAssignment(SymbolAssignment),
 }
 
 #[derive(Debug)]
 pub struct OutputFormat {
-    pub formats: Vec<String>, // Assuming bfdname is a String
+    pub binary_file_descriptor_name: String,
 }
 
 #[derive(Debug)]
 pub struct OutputArch {
-    pub architecture: String, // Assuming bfdarch is a String
+    pub binary_file_descriptor_architecture: String,
 }
 
 #[derive(Debug)]
 pub struct Entry {
-    pub symbol: String,
+    pub entry_point: String,
 }
 
 #[derive(Debug)]
-pub struct PHDRS {
-    pub entries: Vec<PHDRSInner>,
+pub struct Phdrs {
+    pub entries: Vec<Phdr>,
 }
 
 #[derive(Debug)]
-pub struct PHDRSInner {
-    pub ident: String,
-    pub flags: String,
-    pub integer: i64, // Assuming integer is an i64
+pub struct Phdr {
+    pub name: String,
+    pub ty: String,
+    pub flags: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct Sections {
-    pub commands: Vec<Command>,
+    pub commands: Vec<SectionsCommand>,
+}
+
+#[derive(Debug)]
+pub enum SectionsCommand {
+    Macro,
+    Entry(Entry),
+    SymbolAssignment(SymbolAssignment),
+    OutputSectionDescription(OutputSectionDescription),
 }
 
 #[derive(Debug)]
 pub struct SymbolAssignment {
-    pub symbol: String,
-    pub operation: String, // "+" or "="
-    pub expr: String,      // Expression as a string
+    pub inner: String,
+    // pub symbol: String,
+    // pub operation: String, // "+" or "="
+    // pub expr: String,      // Expression as a string
 }
 
 #[derive(Debug)]
 pub struct OutputSectionDescription {
     pub section: String,
-    pub expr: Option<String>,
-    pub ident: Option<String>,
-    pub at_address: Option<String>,
+    pub address: Option<String>,
+    pub ty: Option<String>,
+    pub at: Option<String>,
     pub align: Option<String>,
     pub commands: Vec<OutputSectionCommand>,
-    pub identifiers: Vec<String>,
-    pub constants: Option<String>,
+    pub phdrs: Vec<String>,
+    pub fill_expr: Option<String>,
 }
 
 #[derive(Debug)]
 pub enum OutputSectionCommand {
-    UnusedMacros,
+    Macro,
     SymbolAssignment(SymbolAssignment),
     OutputSectionData(OutputSectionData),
     InputSectionDescription(InputSectionDescription),
@@ -89,208 +88,369 @@ pub enum OutputSectionCommand {
 
 #[derive(Debug)]
 pub struct OutputSectionData {
-    pub byte: i64, // Assuming Byte is represented as an integer
+    pub inner: String,
 }
 
 #[derive(Debug)]
 pub struct InputSectionDescription {
-    pub input_section: String,           // Assuming input section is a string
-    pub keep: Option<Vec<InputSection>>, // Keep sections if applicable
+    pub input_section: String, // Assuming input section is a string
 }
 
 #[derive(Debug)]
-pub struct InputSection {
-    pub filename_wildcard: String,
-    pub section_wildcards: Vec<SectionWildcard>,
-}
-
-#[derive(Debug)]
-pub struct SectionWildcard {
-    pub section: String,
-    pub wildcard: Option<String>, // Optional "*"
-}
-
-// Implement methods as needed for AST manipulation
-impl AstNode {
-    pub fn new_linker_script(commands: Vec<Command>) -> Self {
-        AstNode::LinkerScript(commands)
-    }
-
-    // Add other methods for interaction with the AST here
+pub struct Expression {
+    // TODO(fh): replace with (lhs, op, rhs)
+    expr: String,
 }
 
 // Example method for `OutputFormat`
 impl OutputFormat {
-    pub fn new(formats: Vec<String>) -> Self {
-        OutputFormat { formats }
+    pub fn new(bfdname: String) -> Self {
+        OutputFormat {
+            binary_file_descriptor_name: bfdname,
+        }
     }
-}
 
-impl AstNode {
-    pub fn to_string(&self) -> String {
-        match self {
-            AstNode::LinkerScript(commands) => {
-                format!(
-                    "LinkerScript {{\n{}\n}}",
-                    commands
-                        .iter()
-                        .map(|cmd| cmd.to_string())
-                        .collect::<Vec<String>>()
-                        .join("\n")
-                )
+    fn parse(command: Pair<'_, Rule>) -> OutputFormat {
+        match command.as_rule() {
+            Rule::OutputFormat => {
+                todo!()
             }
-            AstNode::Command(command) => command.to_string(),
-            AstNode::OutputFormat(output_format) => output_format.to_string(),
-            AstNode::OutputArch(output_arch) => output_arch.to_string(),
-            AstNode::Entry(entry) => entry.to_string(),
-            AstNode::PHDRS(phdrs) => phdrs.to_string(),
-            AstNode::Sections(sections) => sections.to_string(),
-            AstNode::SymbolAssignment(symbol_assignment) => symbol_assignment.to_string(),
-            AstNode::OutputSectionDescription(osd) => osd.to_string(),
+            _ => unreachable!(),
         }
     }
 }
 
 impl Command {
-    pub fn to_string(&self) -> String {
-        match &self.kind {
-            CommandKind::UnusedMacros => "UnusedMacros".to_string(),
-            CommandKind::OutputFormat(output_format) => output_format.to_string(),
-            CommandKind::OutputArch(output_arch) => output_arch.to_string(),
-            CommandKind::Entry(entry) => entry.to_string(),
-            CommandKind::Phdrs(phdrs) => phdrs.to_string(),
-            CommandKind::Sections(sections) => sections.to_string(),
-            CommandKind::SymbolAssignment(symbol_assignment) => symbol_assignment.to_string(),
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        match &self {
+            Command::Macro => todo!(),
+            Command::OutputFormat(output_format) => output_format.to_string_with_indent(0),
+            Command::OutputArch(output_arch) => output_arch.to_string_with_indent(0),
+            Command::Entry(entry) => entry.to_string_with_indent(0),
+            Command::Phdrs(phdrs) => phdrs.to_string_with_indent(0),
+            Command::Sections(sections) => sections.to_string_with_indent(0),
+            Command::SymbolAssignment(symbol_assignment) => {
+                symbol_assignment.to_string_with_indent(0)
+            }
+        }
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> Self {
+        match command.as_rule() {
+            Rule::unused_marcos => Command::Macro,
+            Rule::OutputFormat => Command::OutputFormat(OutputFormat::parse(command)),
+            Rule::OutputArch => Command::OutputArch(OutputArch::parse(command)),
+            Rule::Entry => Command::Entry(Entry::parse(command)),
+            Rule::PHDRS => Command::Phdrs(Phdrs::parse(command)),
+            Rule::Sections => Command::Sections(Sections::parse(command)),
+            Rule::symbol_assignment => Command::SymbolAssignment(SymbolAssignment::parse(command)),
+            _ => panic!("Unsupported rule: {:?}", command.as_rule()),
         }
     }
 }
 
 impl OutputFormat {
-    pub fn to_string(&self) -> String {
-        let formats_str = self.formats.join(", ");
-        format!("OUTPUT_FORMAT({})", formats_str)
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        format!("OUTPUT_FORMAT({})", self.binary_file_descriptor_name)
     }
 }
 
 impl OutputArch {
-    pub fn to_string(&self) -> String {
-        format!("OUTPUT_ARCH({})", self.architecture)
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        format!("OUTPUT_ARCH({})", self.binary_file_descriptor_architecture)
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> OutputArch {
+        assert!(matches!(command.as_rule(), Rule::OutputArch));
+        OutputArch {
+            binary_file_descriptor_architecture: command.into_inner().as_str().to_owned(),
+        }
     }
 }
 
 impl Entry {
-    pub fn to_string(&self) -> String {
-        format!("ENTRY({})", self.symbol)
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        format!("ENTRY({})", self.entry_point)
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> Entry {
+        assert!(matches!(command.as_rule(), Rule::Entry));
+        Entry {
+            entry_point: command.into_inner().as_str().to_owned(),
+        }
     }
 }
 
-impl PHDRS {
-    pub fn to_string(&self) -> String {
+impl Phdrs {
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
         let entries_str = self
             .entries
             .iter()
-            .map(|entry| entry.to_string())
+            .map(|entry| entry.to_string_with_indent(indent))
             .collect::<Vec<String>>()
             .join("\n");
-        format!("PHDRS {{\n{}\n}}", entries_str)
+        format!("PHDRS {{\n{entries_str}\n}}")
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> Phdrs {
+        assert!(matches!(command.as_rule(), Rule::PHDRS));
+        Phdrs {
+            entries: command.into_inner().into_iter().map(Phdr::parse).collect(),
+        }
     }
 }
-impl PHDRSInner {
-    pub fn to_string(&self) -> String {
-        format!("{} {} FLAGS({})", self.ident, self.flags, self.integer)
+impl Phdr {
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        let flags = self
+            .flags
+            .as_ref()
+            .map_or(String::new(), |flags| format!("FLAGS({flags}"));
+        format!("{} {} {flags};", self.name, self.ty)
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> Phdr {
+        assert!(matches!(command.as_rule(), Rule::PHDRS_inner));
+        let phdr = command.into_inner();
+
+        let name = phdr.find_first_tagged("name").unwrap().as_str().to_owned();
+        let ty = phdr.find_first_tagged("ty").unwrap().as_str().to_owned();
+        let flags = phdr
+            .find_first_tagged("flag")
+            .map(|pair| pair.as_str().to_owned());
+        let t = Phdr { name, ty, flags };
+        eprintln!("{}", t.to_string_with_indent(0));
+        t
     }
 }
 
 impl Sections {
-    pub fn to_string(&self) -> String {
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
         let commands_str = self
             .commands
             .iter()
-            .map(|cmd| cmd.to_string())
+            .map(|cmd| cmd.to_string_with_indent(indent))
             .collect::<Vec<String>>()
             .join("\n");
         format!("SECTIONS {{\n{}\n}}", commands_str)
     }
+
+    fn parse(command: Pair<'_, Rule>) -> Sections {
+        assert!(matches!(command.as_rule(), Rule::Sections));
+
+        Self {
+            commands: command
+                .into_inner()
+                .into_iter()
+                .map(SectionsCommand::parse)
+                .collect(),
+        }
+    }
+}
+
+impl SectionsCommand {
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        match self {
+            SectionsCommand::Macro => todo!(),
+            SectionsCommand::Entry(entry) => entry.to_string_with_indent(indent),
+            SectionsCommand::SymbolAssignment(symbol_assignment) => {
+                symbol_assignment.to_string_with_indent(indent)
+            }
+            SectionsCommand::OutputSectionDescription(output_section_description) => {
+                output_section_description.to_string_with_indent(indent)
+            }
+        }
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> Self {
+        assert!(matches!(
+            command.as_rule(),
+            Rule::unused_marcos
+                | Rule::Entry
+                | Rule::symbol_assignment
+                | Rule::OutputSectionDescription
+        ));
+
+        match command.as_rule() {
+            Rule::unused_marcos => SectionsCommand::Macro,
+            Rule::Entry => SectionsCommand::Entry(Entry::parse(command)),
+            Rule::symbol_assignment => {
+                SectionsCommand::SymbolAssignment(SymbolAssignment::parse(command))
+            }
+            Rule::OutputSectionDescription => {
+                SectionsCommand::OutputSectionDescription(OutputSectionDescription::parse(command))
+            }
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl SymbolAssignment {
-    pub fn to_string(&self) -> String {
-        format!("{} {} {}; ", self.symbol, self.operation, self.expr)
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        format!("{indent}{}", self.inner, indent = " ".repeat(indent))
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> SymbolAssignment {
+        assert!(matches!(command.as_rule(), Rule::symbol_assignment));
+
+        Self {
+            inner: command.as_str().to_owned(),
+        }
     }
 }
 
 impl OutputSectionDescription {
-    pub fn to_string(&self) -> String {
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
         let commands_str = self
             .commands
             .iter()
-            .map(|cmd| cmd.to_string())
+            .map(|cmd| cmd.to_string_with_indent(indent))
             .collect::<Vec<String>>()
             .join("\n");
-        let ident_str = self.identifiers.join(":");
-        let constants_str = self.constants.clone().unwrap_or_default();
+        let ident_str = self.phdrs.join(":");
+        let constants_str = self.fill_expr.clone().unwrap_or_default();
 
         format!(
             "{} {}: {} {{\n{commands_str}\n}} :{ident_str} ={constants_str}",
             self.section,
-            self.expr.as_deref().unwrap_or(""),
-            self.at_address.as_deref().unwrap_or(""),
+            self.address.as_deref().unwrap_or(""),
+            self.at.as_deref().unwrap_or(""),
         )
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> Self {
+        assert!(matches!(command.as_rule(), Rule::OutputSectionDescription));
+
+        let inner = command.into_inner();
+        let section = inner
+            .find_first_tagged("section")
+            .unwrap()
+            .as_str()
+            .to_owned();
+        let address = inner
+            .find_first_tagged("address")
+            .map(|x| x.as_str().to_owned());
+        let ty = inner.find_first_tagged("ty").map(|x| x.as_str().to_owned());
+        let at = inner.find_first_tagged("at").map(|x| x.as_str().to_owned());
+        let align = inner
+            .find_first_tagged("align")
+            .map(|x| x.as_str().to_owned());
+        let commands = inner
+            .clone()
+            .find_tagged("commands")
+            .map(OutputSectionCommand::parse)
+            .collect();
+        let phdrs = inner
+            .clone()
+            .find_tagged("phdrs")
+            .map(|x| x.as_str().to_owned())
+            .collect();
+        let fill_expr = inner
+            .find_first_tagged("fillexp")
+            .map(|x| x.as_str().to_owned());
+
+        Self {
+            section,
+            address,
+            ty,
+            at,
+            align,
+            commands,
+            phdrs,
+            fill_expr,
+        }
     }
 }
 
 impl OutputSectionCommand {
-    pub fn to_string(&self) -> String {
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
         match self {
-            OutputSectionCommand::UnusedMacros => "UnusedMacros".to_string(),
+            OutputSectionCommand::Macro => todo!(),
             OutputSectionCommand::SymbolAssignment(symbol_assignment) => {
-                symbol_assignment.to_string()
+                symbol_assignment.to_string_with_indent(indent)
             }
-            OutputSectionCommand::OutputSectionData(data) => data.to_string(),
-            OutputSectionCommand::InputSectionDescription(desc) => desc.to_string(),
+            OutputSectionCommand::OutputSectionData(data) => data.to_string_with_indent(indent),
+            OutputSectionCommand::InputSectionDescription(desc) => {
+                desc.to_string_with_indent(indent)
+            }
+        }
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> Self {
+        assert!(matches!(
+            command.as_rule(),
+            Rule::unused_marcos
+                | Rule::symbol_assignment
+                | Rule::OutputSectionData
+                | Rule::InputSectionDescription
+        ));
+
+        match command.as_rule() {
+            Rule::unused_marcos => OutputSectionCommand::Macro,
+            Rule::symbol_assignment => {
+                OutputSectionCommand::SymbolAssignment(SymbolAssignment::parse(command))
+            }
+            Rule::OutputSectionData => {
+                OutputSectionCommand::OutputSectionData(OutputSectionData::parse(command))
+            }
+            Rule::InputSectionDescription => OutputSectionCommand::InputSectionDescription(
+                InputSectionDescription::parse(command),
+            ),
+            _ => unreachable!(),
         }
     }
 }
 
 impl OutputSectionData {
-    pub fn to_string(&self) -> String {
-        format!("BYTE({});", self.byte)
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        format!("{}", self.inner)
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> Self {
+        assert!(matches!(command.as_rule(), Rule::OutputSectionData));
+
+        Self {
+            inner: command.as_str().to_owned(),
+        }
     }
 }
 
 impl InputSectionDescription {
-    pub fn to_string(&self) -> String {
-        if let Some(keep_sections) = &self.keep {
-            let keep_str = keep_sections
-                .iter()
-                .map(|section| section.to_string())
-                .collect::<Vec<String>>()
-                .join(", ");
-            format!("KEEP({})", keep_str)
-        } else {
-            self.input_section.clone()
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        format!(
+            "{indent}{}",
+            self.input_section,
+            indent = " ".repeat(indent)
+        )
+    }
+
+    fn parse(command: Pair<'_, Rule>) -> Self {
+        assert!(matches!(command.as_rule(), Rule::InputSectionDescription));
+
+        Self {
+            input_section: command.as_str().to_owned(),
         }
     }
 }
 
-impl InputSection {
+impl LinkerScript {
+    pub fn parse(file: Pair<'_, Rule>) -> Self {
+        assert!(matches!(file.as_rule(), Rule::LinkerScript));
+        let mut commands = Vec::new();
+        for command in file.into_inner() {
+            if matches!(command.as_rule(), Rule::EOI) {
+                break;
+            }
+            commands.push(Command::parse(command));
+        }
+
+        Self { commands }
+    }
+
     pub fn to_string(&self) -> String {
-        let wildcards_str = self
-            .section_wildcards
+        self.commands
             .iter()
-            .map(|wildcard| wildcard.to_string())
-            .collect::<Vec<String>>()
-            .join(", ");
-        format!("{}({})", self.filename_wildcard, wildcards_str)
-    }
-}
-
-impl SectionWildcard {
-    pub fn to_string(&self) -> String {
-        if let Some(wildcard) = &self.wildcard {
-            format!("{}{}", self.section, wildcard)
-        } else {
-            self.section.clone()
-        }
+            .map(|cmd| cmd.to_string_with_indent(0))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }
