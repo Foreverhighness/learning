@@ -7,6 +7,8 @@ use pest_derive::Parser;
 #[grammar = "ldv2.pest"]
 pub struct LinkerScriptParser;
 
+mod ast;
+
 const RISCV: &str = "riscv.ld";
 const LOONGARCH: &str = "loongarch.ld";
 const ARM: &str = "arm.ld";
@@ -14,7 +16,7 @@ const ARM64: &str = "arm64.ld";
 const X86: &str = "x86.ld";
 
 fn main() {
-    let filenames = &[RISCV, LOONGARCH, ARM, ARM64, X86];
+    let filenames = [RISCV, LOONGARCH, ARM, ARM64, X86];
     for filename in filenames {
         let file =
             std::fs::read_to_string(filename).expect(&format!(r#"file "{filename}" not exist."#));
