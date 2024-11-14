@@ -4,5 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-pest = "2.7.14"
-pest_derive = "2.7.14"
+derive_more = { version = "1.0.0", features = ["display", "from"] }
+enum_dispatch = "0.3.13"
+pest = { version = "2.7.14", optional = true }
+pest_derive = { version = "2.7.14", optional = true }
+
+[features]
+default = ["pest"]
+pest = ["dep:pest", "dep:pest_derive"]

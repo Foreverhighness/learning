@@ -6,22 +6,24 @@ LinkerScript = {
 COMMENT    = _{ "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 
-Command      = _{ unused_marcos | OutputFormat | OutputArch | Entry | PHDRS | Sections | symbol_assignment }
+Command      = _{ Macro | OutputFormat | OutputArch | Entry | Assertion | Phdrs | Sections | SymbolAssignment }
 OutputFormat =  { "OUTPUT_FORMAT(" ~ (#format = bfdname | (#default = bfdname ~ "," ~ #big = bfdname ~ "," ~ #little = bfdname)) ~ ")" }
 OutputArch   =  { "OUTPUT_ARCH(" ~ #arch = bfdarch ~ ")" }
 Entry        =  { "ENTRY(" ~ #entry = symbol ~ ")" }
+Assertion    =  { "ASSERT(" ~ expr ~ "," ~ string ~ ")" }
+// <https://sourceware.org/binutils/docs/ld/Miscellaneous-Commands.html>
 
 /// PHDRS {
 /// name type [ FILEHDR ] [ PHDRS ] [ AT ( address ) ]
 /// [ FLAGS ( flags ) ] ;
 /// }
-PHDRS       = {
+Phdrs           = {
     "PHDRS" ~ "{" //
   // TODO: ~ FILEHDR? ~  PHDRS?  ~ AtAddress? ~ FLAGS ( flags )
-  ~ PHDRS_inner* //
+  ~ PhdrDescription* //
   ~ "}"
 }
-PHDRS_inner = { #name = ident ~ #ty = ident ~ ("FLAGS" ~ "(" ~ #flags = integer ~ ")")? ~ ";" }
+PhdrDescription = { #name = ident ~ #ty = ident ~ ("FLAGS" ~ "(" ~ #flags = integer ~ ")")? ~ ";" }
 
 /// The format of the SECTIONS command is:
 /// SECTIONS
@@ -31,7 +33,7 @@ PHDRS_inner = { #name = ident ~ #ty = ident ~ ("FLAGS" ~ "(" ~ #flags = integer 
 /// …
 /// }
 Sections        =  { "SECTIONS" ~ "{" ~ SectionsCommand* ~ "}" }
-SectionsCommand = _{ unused_marcos | Entry | symbol_assignment | OutputSectionDescription }
+SectionsCommand = _{ Macro | Entry | SymbolAssignment | Assertion | OutputSectionDescription }
 
 AtAddress = { "AT(" ~ expr ~ ")" }
 
@@ -52,7 +54,7 @@ OutputSectionDescription = {
   ~ #align = align? //
   ~ "{" //
   ~ #commands = OutputSectionCommand* //
-  ~ "}" ~ #phdrs = OutputSectionPhdr* ~ #fillexp = ("=" ~ constants)?
+  ~ "}" ~ #phdrs = OutputSectionPhdr* ~ #fillexp = ("=" ~ constant)?
 }
 OutputSectionPhdr        = { ":" ~ ident }
 
@@ -62,8 +64,8 @@ OutputSectionPhdr        = { ":" ~ ident }
 /// - data values to include directly
 /// - a special output section keyword
 OutputSectionCommand = _{
-    unused_marcos
-  | symbol_assignment
+    Macro
+  | SymbolAssignment
   | OutputSectionData
   | InputSectionDescription
 }
@@ -76,12 +78,12 @@ InputSectionDescription =  { ("KEEP(" ~ InputSection+ ~ ")") | InputSection ~ ";
 OutputSectionData       =  { Byte }
 Byte                    =  { "BYTE(" ~ expr ~ ")" ~ ";" }
 
-symbol_assignment = { symbol ~ ("+=" | "=") ~ expr ~ ";" }
+SymbolAssignment = { symbol ~ ("+=" | "=") ~ expr ~ ";" }
 // Unless quoted, symbol names start with a letter, underscore, or period and may include letters, digits, underscores, periods, and hyphens.
 ident  = @{ ("_" | "." | ASCII_ALPHA) ~ ("_" | "-" | "." | "$" | ASCII_ALPHANUMERIC)+ }
 symbol = @{ "." | ident }
 
-primary     = _{ constants | buildin_fn | symbol | "(" ~ expr ~ ")" }
+primary     = _{ constant | builtin_fn | symbol | "(" ~ expr ~ ")" }
 atom        =  { unary_op? ~ primary }
 unary_op    = _{ "-" | "~" }
 binary_op   = _{ "+" | "-" | "*" | "&" | "==" | "<=" | "||" | "<<" | ">>" }
@@ -93,8 +95,8 @@ integer     =  { hexadecimal | octal | decimal }
 // the linker considers an integer beginning with ` 0 ' to be octal, and an integer beginning with ` 0x ' or ` 0X ' to be hexadecimal.
 // The linker considers other integers to be decimal.
 // In addition, you can use the suffixes ` K ' and ` M ' to scale a constant by ` 1024 ' or ` 1024*1024 ' respectively.
-constants  = @{ ("0" ~ integer) | (("0x" | "0X") ~ integer) | (integer ~ ("K" | "M")?) }
-buildin_fn = _{ absolute | addr | align | defined | sizeof }
+constant   = @{ integer ~ ("K" | "M")? }
+builtin_fn = _{ absolute | addr | align | defined | sizeof }
 absolute   = _{ "ABSOLUTE(" ~ expr ~ ")" }
 addr       = _{ "ADDR(" ~ section ~ ")" }
 align      = _{ "ALIGN(" ~ expr ~ ("," ~ expr)? ~ ")" }
@@ -102,11 +104,10 @@ defined    = _{ "DEFINED(" ~ symbol ~ ")" }
 sizeof     = _{ "SIZEOF(" ~ section ~ ")" }
 section    = @{ ("/" | "_" | "." | "-" | "+" | ASCII_ALPHANUMERIC)+ }
 
-unused_marcos  =  { special_assert | ARM_MACROS | ASSERT | OF_TABLE | CONSTRUCTIONRS }
+Macro          =  { special_assert | ARM_MACROS | OF_TABLE | CONSTRUCTIONRS }
 OF_TABLE       = _{ "_OF_TABLE_IS_ENABLED(" ~ (!")" ~ ANY)* ~ ")" ~ "(" ~ (!")" ~ ANY)* ~ ")" }
 CONSTRUCTIONRS = _{ "CONSTRUCTORS" }
-special_assert = _{ "." ~ "=" ~ ASSERT ~ ";" }
-ASSERT         = _{ "ASSERT(" ~ expr ~ "," ~ string ~ ")" }
+special_assert = _{ "." ~ "=" ~ Assertion ~ ";" }
 ARM_MACROS     = _{ ARM_KEEP | ARM_MACRO | HEAD_SYMBOLS }
 ARM_MACRO      = @{ "ARM_" ~ ASCII_ALPHA_UPPER+ }
 ARM_KEEP       = _{ ARM_MACRO ~ "_KEEP(" ~ InputSectionDescription+ ~ ")" }

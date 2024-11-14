@@ -1,12 +1,8 @@
-use pest::error::LineColLocation;
-use pest::Parser;
-use pest_derive::Parser;
+#[cfg(feature = "pest")]
+mod pest;
 
-#[derive(Parser)]
-#[grammar = "ldv2.pest"]
-pub struct LinkerScriptParser;
-
-mod ast;
+#[cfg(feature = "pest")]
+use pest::format;
 
 const RISCV: &str = "riscv.ld";
 const LOONGARCH: &str = "loongarch.ld";
@@ -17,24 +13,7 @@ const X86: &str = "x86.ld";
 fn main() {
     let filenames = [RISCV, LOONGARCH, ARM, ARM64, X86];
     for filename in filenames {
-        let file =
-            std::fs::read_to_string(filename).expect(&format!(r#"file "{filename}" not exist."#));
-
-        let mut file = match LinkerScriptParser::parse(Rule::LinkerScript, &file) {
-            Ok(file) => file,
-            Err(e) => {
-                let LineColLocation::Pos((line, column)) = e.line_col else {
-                    unreachable!()
-                };
-                panic!(
-                    "{e:?} \n{}/{filename}:{line}:{column}",
-                    std::env::current_dir().unwrap().display()
-                );
-            }
-        };
-
-        let file = file.next().unwrap();
-        let linker_script = ast::LinkerScript::parse(file);
-        eprintln!("{}", linker_script.to_string());
+        let linker_script = format(filename);
+        std::fs::write(format!("format-{filename}"), linker_script).unwrap();
     }
 }
