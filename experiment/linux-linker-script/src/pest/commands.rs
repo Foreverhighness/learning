@@ -22,14 +22,14 @@ pub enum Command {
 impl AbstractSyntaxTreeNode for Command {
     fn parse(pair: Pair<'_, Rule>) -> Self {
         match pair.as_rule() {
-            Rule::Macro => Command::Macro(Macro::parse(pair)),
-            Rule::OutputFormat => Command::OutputFormat(OutputFormat::parse(pair)),
-            Rule::OutputArch => Command::OutputArch(OutputArch::parse(pair)),
-            Rule::Entry => Command::Entry(Entry::parse(pair)),
-            Rule::SymbolAssignment => Command::SymbolAssignment(SymbolAssignment::parse(pair)),
-            Rule::Assertion => Command::Assertion(Assertion::parse(pair)),
-            Rule::Phdrs => Command::Phdrs(Phdrs::parse(pair)),
-            Rule::Sections => Command::Sections(Sections::parse(pair)),
+            Rule::Macro => Self::Macro(Macro::parse(pair)),
+            Rule::OutputFormat => Self::OutputFormat(OutputFormat::parse(pair)),
+            Rule::OutputArch => Self::OutputArch(OutputArch::parse(pair)),
+            Rule::Entry => Self::Entry(Entry::parse(pair)),
+            Rule::SymbolAssignment => Self::SymbolAssignment(SymbolAssignment::parse(pair)),
+            Rule::Assertion => Self::Assertion(Assertion::parse(pair)),
+            Rule::Phdrs => Self::Phdrs(Phdrs::parse(pair)),
+            Rule::Sections => Self::Sections(Sections::parse(pair)),
             _ => panic!("Unsupported rule: {:?}", pair.as_rule()),
         }
     }
@@ -95,8 +95,8 @@ pub struct Phdrs {
 impl AbstractSyntaxTreeNode for Phdrs {
     fn parse(command: Pair<'_, Rule>) -> Self {
         assert!(matches!(command.as_rule(), Rule::Phdrs));
-        Phdrs {
-            entries: command.into_inner().into_iter().map(Phdr::parse).collect(),
+        Self {
+            entries: command.into_inner().map(Phdr::parse).collect(),
         }
     }
 }
@@ -106,7 +106,7 @@ impl core::fmt::Display for Phdrs {
         let entries_str = self
             .entries
             .iter()
-            .map(|entry| entry.display_with_indent())
+            .map(Phdr::display_with_indent)
             .collect::<Vec<String>>()
             .join("\n");
         write!(f, "PHDRS {{\n{entries_str}\n}}")
@@ -142,14 +142,12 @@ impl AbstractSyntaxTreeNode for SectionsCommand {
         ));
 
         match pair.as_rule() {
-            Rule::Macro => SectionsCommand::Macro(Macro::parse(pair)),
-            Rule::Entry => SectionsCommand::Entry(Entry::parse(pair)),
-            Rule::SymbolAssignment => {
-                SectionsCommand::SymbolAssignment(SymbolAssignment::parse(pair))
-            }
-            Rule::Assertion => SectionsCommand::Assertion(Assertion::parse(pair)),
+            Rule::Macro => Self::Macro(Macro::parse(pair)),
+            Rule::Entry => Self::Entry(Entry::parse(pair)),
+            Rule::SymbolAssignment => Self::SymbolAssignment(SymbolAssignment::parse(pair)),
+            Rule::Assertion => Self::Assertion(Assertion::parse(pair)),
             Rule::OutputSectionDescription => {
-                SectionsCommand::OutputSectionDescription(OutputSectionDescription::parse(pair))
+                Self::OutputSectionDescription(OutputSectionDescription::parse(pair))
             }
             _ => unreachable!(),
         }
@@ -212,16 +210,16 @@ impl AbstractSyntaxTreeNode for OutputSectionDescription {
 }
 
 impl core::fmt::Display for OutputSectionDescription {
-    /// section [address] [(type)] :
-    /// [AT(lma)]
-    /// [ALIGN(section_align) | ALIGN_WITH_INPUT]
-    /// [SUBALIGN(subsection_align)]
-    /// [constraint]
-    /// {
-    /// output-section-command
-    /// output-section-command
-    /// …
-    /// } [>region] [AT>lma_region] [:phdr :phdr …] [=fillexp] [,]
+    // section [address] [(type)] :
+    // [AT(lma)]
+    // [ALIGN(section_align) | ALIGN_WITH_INPUT]
+    // [SUBALIGN(subsection_align)]
+    // [constraint]
+    // {
+    //   output-section-command
+    //   output-section-command
+    // …
+    // } [>region] [AT>lma_region] [:phdr :phdr …] [=fillexp] [,]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let section = &self.section;
         write!(f, "{section}")?;
@@ -242,9 +240,9 @@ impl core::fmt::Display for OutputSectionDescription {
         if self.commands.len() == 1 {
             write!(f, " {{ {} }}", self.commands[0])?;
         } else {
-            write!(f, " {{\n")?;
+            writeln!(f, " {{")?;
             for command in &self.commands {
-                write!(f, "{}\n", command.display_with_indent())?;
+                writeln!(f, "{}", command.display_with_indent())?;
             }
             write!(f, "}}")?;
         }
@@ -280,15 +278,11 @@ impl AbstractSyntaxTreeNode for OutputSectionCommand {
         ));
 
         match pair.as_rule() {
-            Rule::Macro => OutputSectionCommand::Macro(Macro::parse(pair)),
-            Rule::SymbolAssignment => {
-                OutputSectionCommand::SymbolAssignment(SymbolAssignment::parse(pair))
-            }
-            Rule::OutputSectionData => {
-                OutputSectionCommand::OutputSectionData(OutputSectionData::parse(pair))
-            }
+            Rule::Macro => Self::Macro(Macro::parse(pair)),
+            Rule::SymbolAssignment => Self::SymbolAssignment(SymbolAssignment::parse(pair)),
+            Rule::OutputSectionData => Self::OutputSectionData(OutputSectionData::parse(pair)),
             Rule::InputSectionDescription => {
-                OutputSectionCommand::InputSectionDescription(InputSectionDescription::parse(pair))
+                Self::InputSectionDescription(InputSectionDescription::parse(pair))
             }
             _ => unreachable!(),
         }

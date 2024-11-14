@@ -1,7 +1,6 @@
 //! Behavior of concurrency
 #![allow(dead_code, reason = "may use other implement.")]
 
-#[expect(clippy::borrow_deref_ref, reason = "MSRV require, remove soon.")]
 pub mod basic {
     use core::fmt::Debug;
     use core::hint;

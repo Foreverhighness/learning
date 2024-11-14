@@ -29,7 +29,7 @@ impl core::fmt::Display for LinkerScript {
         let commands = self
             .commands
             .iter()
-            .map(|cmd| cmd.to_string())
+            .map(ToString::to_string)
             .collect::<Vec<_>>()
             .join("\n");
         write!(f, "{commands}",)
@@ -46,11 +46,7 @@ impl AbstractSyntaxTreeNode for Sections {
         assert!(matches!(pair.as_rule(), Rule::Sections));
 
         Self {
-            commands: pair
-                .into_inner()
-                .into_iter()
-                .map(SectionsCommand::parse)
-                .collect(),
+            commands: pair.into_inner().map(SectionsCommand::parse).collect(),
         }
     }
 }
@@ -65,9 +61,9 @@ impl core::fmt::Display for Sections {
         let commands = self
             .commands
             .iter()
-            .map(|cmd| cmd.display_with_indent())
+            .map(SectionsCommand::display_with_indent)
             .collect::<Vec<_>>()
             .join("\n");
-        write!(f, "SECTIONS {{\n{}\n}}", commands)
+        write!(f, "SECTIONS {{\n{commands}\n}}")
     }
 }

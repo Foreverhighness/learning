@@ -4,4 +4,4 @@ mod expression;
 mod linker_script;
 mod parser;
 
-pub(crate) use parser::format;
+pub use parser::format;
