@@ -6,6 +6,7 @@ CFLAGS = -m64 -Og -g -Wall -Werror -I$(INCLUDE)
 
 VERSION ?= 6.11
 URL ?= https://raw.githubusercontent.com/torvalds/linux/refs/tags/v$(VERSION)
+WGET = wget -q
 
 # arch header
 RISCV_HEADERS = asm/pgtable.h asm/page.h asm/cache.h asm/thread_info.h asm/set_memory.h linux/sizes.h image-vars.h
@@ -33,7 +34,7 @@ $(ARCHS): %: %.ld
 arch/%/vmlinux.lds.S:
 	@mkdir -p $(@D)
 ifeq ($(strip $(LOCAL_REPO)),)
-	wget -q "$(URL)/$(@D)/kernel/$(@F)" -O $@
+	$(WGET) "$(URL)/$(@D)/kernel/$(@F)" -O $@
 else
 	@cp "$(LOCAL_REPO)/$(@D)/kernel/$(@F)" $@
 endif
@@ -41,7 +42,7 @@ endif
 $(LINKER_HEADERS_PATH): %:
 	@mkdir -p $(@D)
 ifeq ($(strip $(LOCAL_REPO)),)
-	wget -q "$(URL)/include/asm-generic/$(@F)" -O $@
+	$(WGET) "$(URL)/include/asm-generic/$(@F)" -O $@
 else
 	@cp "$(LOCAL_REPO)/include/asm-generic/$(@F)" $@
 endif

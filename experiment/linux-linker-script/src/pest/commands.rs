@@ -252,7 +252,7 @@ impl core::fmt::Display for OutputSectionDescription {
             }
         }
         if let Some(fill_expr) = self.fill_expr.as_ref() {
-            write!(f, " {fill_expr}")?;
+            write!(f, " ={fill_expr}")?;
         }
 
         Ok(())
