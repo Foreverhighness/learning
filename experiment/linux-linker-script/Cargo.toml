@@ -2,6 +2,16 @@
 name = "linker-script-formatter"
 version = "0.1.0"
 edition = "2021"
+default-run = "test-ldfmt"
+
+[[bin]]
+name = "test-ldfmt"
+path = "src/main.rs"
+
+[[bin]]
+name = "pest-ldfmt"
+path = "src/bin/main.rs"
+required-features = ["pest"]
 
 [dependencies]
 derive_more = { version = "1.0.0", features = ["display", "from"] }
