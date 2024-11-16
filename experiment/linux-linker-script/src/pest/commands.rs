@@ -55,12 +55,35 @@ pub struct Entry {
     // entry_point: String,
     inner: String,
 }
-#[derive(Debug, From, Display)]
+
+#[derive(Debug)]
 pub struct SymbolAssignment {
-    inner: String,
-    // symbol: String,
-    // operation: String, // "+" or "="
-    // expr: String,      // Expression as a string
+    symbol: String,
+    assign_op: String, // "+=" or "="
+    expr: Expression,
+}
+
+impl AbstractSyntaxTreeNode for SymbolAssignment {
+    fn parse(pair: Pair<'_, Rule>) -> Self {
+        assert!(matches!(pair.as_rule(), Rule::SymbolAssignment));
+
+        let mut symbol_assignment = pair.into_inner();
+        let symbol = String::parse(symbol_assignment.next().unwrap());
+        let assign_op = String::parse(symbol_assignment.next().unwrap());
+        let expr = Expression::parse(symbol_assignment.next().unwrap());
+
+        Self {
+            symbol,
+            assign_op,
+            expr,
+        }
+    }
+}
+
+impl core::fmt::Display for SymbolAssignment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} {}", self.symbol, self.assign_op, self.expr)
+    }
 }
 
 #[derive(Debug)]
@@ -70,10 +93,10 @@ pub struct Assertion {
 }
 
 impl AbstractSyntaxTreeNode for Assertion {
-    fn parse(command: Pair<'_, Rule>) -> Self {
-        assert!(matches!(command.as_rule(), Rule::Assertion));
+    fn parse(pair: Pair<'_, Rule>) -> Self {
+        assert!(matches!(pair.as_rule(), Rule::Assertion));
 
-        let mut assertion = command.into_inner();
+        let mut assertion = pair.into_inner();
         let expr = Expression::parse(assertion.next().unwrap());
         let message = String::parse(assertion.next().unwrap());
 
@@ -93,10 +116,10 @@ pub struct Phdrs {
 }
 
 impl AbstractSyntaxTreeNode for Phdrs {
-    fn parse(command: Pair<'_, Rule>) -> Self {
-        assert!(matches!(command.as_rule(), Rule::Phdrs));
+    fn parse(pair: Pair<'_, Rule>) -> Self {
+        assert!(matches!(pair.as_rule(), Rule::Phdrs));
         Self {
-            entries: command.into_inner().map(Phdr::parse).collect(),
+            entries: pair.into_inner().map(Phdr::parse).collect(),
         }
     }
 }

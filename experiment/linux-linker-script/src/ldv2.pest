@@ -78,13 +78,14 @@ InputSectionDescription =  { ("KEEP(" ~ InputSection+ ~ ")") | InputSection ~ ";
 OutputSectionData       =  { Byte }
 Byte                    =  { "BYTE(" ~ expr ~ ")" ~ ";" }
 
-SymbolAssignment = { symbol ~ ("+=" | "=") ~ expr ~ ";" }
+SymbolAssignment = { symbol ~ assign_op ~ expr ~ ";" }
+assign_op        = { ("+=" | "=") }
 // Unless quoted, symbol names start with a letter, underscore, or period and may include letters, digits, underscores, periods, and hyphens.
 ident  = @{ ("_" | "." | ASCII_ALPHA) ~ ("_" | "-" | "." | "$" | ASCII_ALPHANUMERIC)+ }
 symbol = @{ "." | ident }
 
 atom    =  { constant | builtin_fn | symbol }
-primary = _{ atom | "(" ~ expr ~ ")" }
+primary = _{ Assertion | atom | "(" ~ expr ~ ")" }
 // https://docs.rs/pest/latest/pest/pratt_parser/struct.PrattParser.html
 expr = { unary_op* ~ primary ~ (binary_op ~ unary_op* ~ primary)* }
 // infix
@@ -120,10 +121,9 @@ defined    = _{ "DEFINED(" ~ symbol ~ ")" }
 sizeof     = _{ "SIZEOF(" ~ section ~ ")" }
 section    = @{ ("/" | "_" | "." | "-" | "+" | ASCII_ALPHANUMERIC)+ }
 
-Macro          =  { special_assert | ARM_MACROS | OF_TABLE | CONSTRUCTIONRS }
+Macro          =  { ARM_MACROS | OF_TABLE | CONSTRUCTIONRS }
 OF_TABLE       = _{ "_OF_TABLE_IS_ENABLED(" ~ (!")" ~ ANY)* ~ ")" ~ "(" ~ (!")" ~ ANY)* ~ ")" }
 CONSTRUCTIONRS = _{ "CONSTRUCTORS" }
-special_assert = _{ "." ~ "=" ~ Assertion ~ ";" }
 ARM_MACROS     = _{ ARM_KEEP | ARM_MACRO | HEAD_SYMBOLS }
 ARM_MACRO      = @{ "ARM_" ~ ASCII_ALPHA_UPPER+ }
 ARM_KEEP       = _{ ARM_MACRO ~ "_KEEP(" ~ InputSectionDescription+ ~ ")" }

@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 derive_more = { version = "1.0.0", features = ["display", "from"] }
-enum_dispatch = "0.3.13"
 pest = { version = "2.7.14", optional = true }
 pest_derive = { version = "2.7.14", optional = true }
 

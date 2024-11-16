@@ -5,6 +5,7 @@ use pest::iterators::Pair;
 use pest::pratt_parser::{Assoc, Op, PrattParser};
 
 use super::ast::AbstractSyntaxTreeNode;
+use super::commands::Assertion;
 use super::parser::Rule;
 
 #[derive(Debug)]
@@ -84,15 +85,20 @@ impl core::fmt::Display for Expression {
 #[derive(Debug)]
 enum Primary {
     // TODO(fh): expand to `constant` and `builtin_fn`
+    Assertion(Box<Assertion>),
     Atom(String),
     Expr(Box<Expression>),
 }
 
 impl AbstractSyntaxTreeNode for Primary {
     fn parse(primary: Pair<'_, Rule>) -> Self {
-        assert!(matches!(primary.as_rule(), Rule::atom | Rule::expr));
+        assert!(matches!(
+            primary.as_rule(),
+            Rule::Assertion | Rule::atom | Rule::expr
+        ));
 
         match primary.as_rule() {
+            Rule::Assertion => Self::Assertion(Box::new(Assertion::parse(primary))),
             Rule::atom => Self::Atom(String::parse(primary)),
             Rule::expr => Self::Expr(Box::new(Expression::parse(primary))),
             _ => unreachable!(),
@@ -103,6 +109,7 @@ impl AbstractSyntaxTreeNode for Primary {
 impl core::fmt::Display for Primary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
+            Self::Assertion(ref assertion) => write!(f, "{assertion}"),
             Self::Atom(ref inner) => write!(f, "{inner}"),
             Self::Expr(ref expr) => write!(f, "({expr})"),
         }
