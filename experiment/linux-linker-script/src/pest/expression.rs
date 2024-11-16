@@ -123,3 +123,39 @@ enum Operation {
     // Sub(Sub)
     // Add(Add)
 }
+
+#[cfg(test)]
+mod tests {
+    use pest::Parser;
+
+    use super::*;
+    use crate::pest::parser::LinkerScriptParser;
+
+    #[test]
+    fn test_expr() {
+        let test_strings = [
+            (
+                "-~1 ||  -~2 - -~3 &(-~4 ||    -~5)",
+                "-~1 || -~2 - -~3 & (-~4 || -~5)",
+            ),
+            (
+                "-1 ||  -2 - -3 &(-4 ||    -5)",
+                "-1 || -2 - -3 & (-4 || -5)",
+            ),
+            ("1 ||  2 - 3 &(4 ||   5)", "1 || 2 - 3 & (4 || 5)"),
+            ("( 1 +  2) - 3 &4 ||    5", "(1 + 2) - 3 & 4 || 5"),
+            ("1", "1"),
+            ("1 + \n \t4", "1 + 4"),
+            ("- ~\n\t   -   \n\n\r\n1", "-~-1"),
+        ];
+
+        for (expr_str, expect) in test_strings {
+            let pair = LinkerScriptParser::parse(Rule::expr, expr_str)
+                .unwrap()
+                .next()
+                .unwrap();
+            let expr = Expression::parse(pair);
+            assert_eq!(expr.to_string(), expect);
+        }
+    }
+}
