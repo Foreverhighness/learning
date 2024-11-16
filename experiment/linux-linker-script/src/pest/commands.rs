@@ -3,6 +3,7 @@ use derive_more::From;
 use pest::iterators::Pair;
 
 use super::ast::{AbstractSyntaxTreeNode, LinkerScriptIndentItem};
+use super::expression::Expression;
 use super::linker_script::Sections;
 use super::parser::Rule;
 
@@ -64,8 +65,7 @@ pub struct SymbolAssignment {
 
 #[derive(Debug)]
 pub struct Assertion {
-    // TODO(fh): replace its type with Expression
-    expr: String,
+    expr: Expression,
     message: String,
 }
 
@@ -74,7 +74,7 @@ impl AbstractSyntaxTreeNode for Assertion {
         assert!(matches!(command.as_rule(), Rule::Assertion));
 
         let mut assertion = command.into_inner();
-        let expr = String::parse(assertion.next().unwrap());
+        let expr = Expression::parse(assertion.next().unwrap());
         let message = String::parse(assertion.next().unwrap());
 
         Self { expr, message }

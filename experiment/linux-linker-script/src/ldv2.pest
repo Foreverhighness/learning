@@ -83,11 +83,27 @@ SymbolAssignment = { symbol ~ ("+=" | "=") ~ expr ~ ";" }
 ident  = @{ ("_" | "." | ASCII_ALPHA) ~ ("_" | "-" | "." | "$" | ASCII_ALPHANUMERIC)+ }
 symbol = @{ "." | ident }
 
-primary     = _{ constant | builtin_fn | symbol | "(" ~ expr ~ ")" }
-atom        =  { unary_op? ~ primary }
-unary_op    = _{ "-" | "~" }
-binary_op   = _{ "+" | "-" | "*" | "&" | "==" | "<=" | "||" | "<<" | ">>" }
-expr        =  { atom ~ (binary_op ~ atom)* }
+atom    =  { constant | builtin_fn | symbol }
+primary = _{ atom | "(" ~ expr ~ ")" }
+// https://docs.rs/pest/latest/pest/pratt_parser/struct.PrattParser.html
+expr = { unary_op* ~ primary ~ (binary_op ~ unary_op* ~ primary)* }
+// infix
+// binary_op   = { "+" | "-" | "*" | "&" | "==" | "<=" | "||" | "<<" | ">>" }
+binary_op   = _{ add | sub | mul | bitwise_and | eq | le | logical_or | left_shift | right_shift }
+add         =  { "+" }
+sub         =  { "-" }
+mul         =  { "*" }
+bitwise_and =  { "&" }
+eq          =  { "==" }
+le          =  { "<=" }
+logical_or  =  { "||" }
+left_shift  =  { "<<" }
+right_shift =  { ">>" }
+// prefix
+// unary_op = { "-" | "~" }
+unary_op    = _{ neg | bitwise_not }
+neg         =  { "-" }
+bitwise_not =  { "~" }
 decimal     = @{ ASCII_DIGIT+ }
 octal       = @{ "0" ~ ASCII_OCT_DIGIT+ }
 hexadecimal = @{ ("0x" | "0X") ~ ASCII_HEX_DIGIT+ }
