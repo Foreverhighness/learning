@@ -1,15 +1,28 @@
 //! Command Line
 //! copy from <https://github.com/rust-lang/rust-analyzer/blob/master/xtask/src/flags.rs>
-#![allow(clippy::allow_attributes)]
-#![allow(clippy::allow_attributes_without_reason)]
+#![allow(clippy::allow_attributes, reason = "don't check generated code")]
+#![allow(clippy::allow_attributes_without_reason, reason = "don't check generated code")]
 
 xflags::xflags! {
     src "./src/flags.rs"
 
     cmd xtask {
+        /// Echo the command itself to stderr.
+        optional -v, --verbose
+
+        /// Clean workspace.
         cmd clean {}
 
-        cmd clippy {}
+        /// Run clippy
+        cmd clippy {
+            default cmd run {}
+
+            /// Automatically apply lint suggestions.
+            cmd fix {
+                /// Add --allow-no-vcs --allow-dirty --allow-staged to fix
+                optional -f, --force
+            }
+        }
     }
 }
 // generated start
@@ -17,6 +30,7 @@ xflags::xflags! {
 // Run `env UPDATE_XFLAGS=1 cargo build` to regenerate.
 #[derive(Debug)]
 pub struct Xtask {
+    pub verbose: bool,
     pub subcommand: XtaskCmd,
 }
 
@@ -30,7 +44,23 @@ pub enum XtaskCmd {
 pub struct Clean;
 
 #[derive(Debug)]
-pub struct Clippy;
+pub struct Clippy {
+    pub subcommand: ClippyCmd,
+}
+
+#[derive(Debug)]
+pub enum ClippyCmd {
+    Run(Run),
+    Fix(Fix),
+}
+
+#[derive(Debug)]
+pub struct Run;
+
+#[derive(Debug)]
+pub struct Fix {
+    pub force: bool,
+}
 
 impl Xtask {
     #[allow(dead_code)]

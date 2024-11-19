@@ -1,11 +1,9 @@
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
-use walkdir::WalkDir;
-use xshell::{cmd, Shell};
+use xshell::{Cmd, Shell};
 
-use crate::clippy::CLIPPY_ARGS;
-
+mod clean;
 mod clippy;
 mod flags;
 
@@ -19,34 +17,24 @@ static WORKSPACE_PATH: LazyLock<&Path> = LazyLock::new(|| {
     )
 });
 
+trait Command {
+    fn cmd(self, sh: &Shell) -> xshell::Result<Cmd>;
+}
+
 fn main() -> xshell::Result<()> {
     let cli = flags::Xtask::from_env_or_exit();
 
     let sh = &Shell::new()?;
     sh.change_dir(*WORKSPACE_PATH);
 
-    match cli.subcommand {
-        flags::XtaskCmd::Clean(_) => {
-            for dir in WalkDir::new(*WORKSPACE_PATH)
-                .max_depth(1)
-                .into_iter()
-                .filter_entry(|entry| entry.file_type().is_dir())
-                .filter_map(Result::ok)
-            {
-                // make clean
-                if dir.path().join("Makefile").exists() {
-                    let path = dir.path();
-                    cmd!(sh, "make clean --no-print-directory -C {path}").quiet().run()?;
-                    continue;
-                }
-                // fallback to do nothing
-            }
+    let mut cmd = match cli.subcommand {
+        flags::XtaskCmd::Clean(clean) => clean.cmd(sh)?,
+        flags::XtaskCmd::Clippy(clippy) => clippy.cmd(sh)?,
+    };
 
-            // cargo clean at workspace
-            cmd!(sh, "cargo clean").run()?;
-        }
-        flags::XtaskCmd::Clippy(_) => cmd!(sh, "cargo clippy -- {CLIPPY_ARGS...}").run()?,
+    if !cli.verbose {
+        cmd = cmd.quiet();
     }
 
-    Ok(())
+    cmd.run()
 }
