@@ -22,6 +22,13 @@ xflags::xflags! {
                 /// Add --allow-no-vcs --allow-dirty --allow-staged to fix
                 optional -f, --force
             }
+
+            /// Export lints for cli, cargo, header
+            cmd export {
+                default cmd cli {}
+                cmd cargo {}
+                cmd attr {}
+            }
         }
     }
 }
@@ -52,6 +59,7 @@ pub struct Clippy {
 pub enum ClippyCmd {
     Run(Run),
     Fix(Fix),
+    Export(Export),
 }
 
 #[derive(Debug)]
@@ -61,6 +69,27 @@ pub struct Run;
 pub struct Fix {
     pub force: bool,
 }
+
+#[derive(Debug)]
+pub struct Export {
+    pub subcommand: ExportCmd,
+}
+
+#[derive(Debug)]
+pub enum ExportCmd {
+    Cli(Cli),
+    Cargo(Cargo),
+    Attr(Attr),
+}
+
+#[derive(Debug)]
+pub struct Cli;
+
+#[derive(Debug)]
+pub struct Cargo;
+
+#[derive(Debug)]
+pub struct Attr;
 
 impl Xtask {
     #[allow(dead_code)]

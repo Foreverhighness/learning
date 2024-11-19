@@ -18,7 +18,7 @@ static WORKSPACE_PATH: LazyLock<&Path> = LazyLock::new(|| {
 });
 
 trait Command {
-    fn cmd(self, sh: &Shell) -> xshell::Result<Cmd>;
+    fn cmd(self, sh: &Shell) -> xshell::Result<Option<Cmd>>;
 }
 
 fn main() -> xshell::Result<()> {
@@ -27,9 +27,13 @@ fn main() -> xshell::Result<()> {
     let sh = &Shell::new()?;
     sh.change_dir(*WORKSPACE_PATH);
 
-    let mut cmd = match cli.subcommand {
+    let cmd = match cli.subcommand {
         flags::XtaskCmd::Clean(clean) => clean.cmd(sh)?,
         flags::XtaskCmd::Clippy(clippy) => clippy.cmd(sh)?,
+    };
+
+    let Some(mut cmd) = cmd else {
+        return Ok(());
     };
 
     if !cli.verbose {

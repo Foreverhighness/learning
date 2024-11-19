@@ -1,11 +1,11 @@
 use walkdir::WalkDir;
-use xshell::{cmd, Cmd, Shell};
+use xshell::cmd;
 
 use crate::flags::Clean;
 use crate::{Command, WORKSPACE_PATH};
 
 impl Command for Clean {
-    fn cmd(self, sh: &Shell) -> xshell::Result<Cmd> {
+    fn cmd(self, sh: &xshell::Shell) -> xshell::Result<Option<xshell::Cmd>> {
         for dir in WalkDir::new(*WORKSPACE_PATH)
             .max_depth(1)
             .into_iter()
@@ -22,6 +22,6 @@ impl Command for Clean {
         }
 
         // cargo clean at workspace
-        Ok(cmd!(sh, "cargo clean"))
+        Ok(Some(cmd!(sh, "cargo clean")))
     }
 }
