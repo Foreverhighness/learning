@@ -76,10 +76,7 @@ impl Trie {
     fn contains_key(&self, key: &str) -> bool {
         self.root
             .as_ref()
-            .and_then(|init| {
-                key.chars()
-                    .try_fold(init, |cur, ch| cur.children().get(&ch))
-            })
+            .and_then(|init| key.chars().try_fold(init, |cur, ch| cur.children().get(&ch)))
             .map_or(false, |cur| cur.is_value_node())
     }
 }
@@ -88,8 +85,7 @@ fn recursion_remove(cur: &dyn TrieNode, key: &str) -> Option<Box<dyn TrieNode>> 
     if key.is_empty() {
         debug_assert!(cur.is_value_node());
         let has_remain_children = !cur.children().is_empty();
-        return has_remain_children
-            .then(|| NodeWithoutValue::with_children(cur.children().clone()));
+        return has_remain_children.then(|| NodeWithoutValue::with_children(cur.children().clone()));
     }
 
     let mut chars = key.chars();
@@ -122,11 +118,7 @@ where
 
     let mut chars = key.chars();
     let ch = chars.next().unwrap();
-    let new_child = recursion_put(
-        cur.and_then(|node| node.children().get(&ch)),
-        chars.as_str(),
-        value,
-    );
+    let new_child = recursion_put(cur.and_then(|node| node.children().get(&ch)), chars.as_str(), value);
 
     let mut new_root = cur.map_or_else(NodeWithoutValue::new_box, |node| node.clone_node());
     new_root.children_mut().insert(ch, new_child.into());

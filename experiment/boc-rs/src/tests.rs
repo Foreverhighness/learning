@@ -138,8 +138,7 @@ mod boc_merge_sort {
         let sender = sender.clone();
 
         run_when(bocs, move |mut content| {
-            let left_and_right_sorted =
-                (*content[step_size + 1] == 1) && (*content[step_size + 2] == 1);
+            let left_and_right_sorted = (*content[step_size + 1] == 1) && (*content[step_size + 2] == 1);
             if !left_and_right_sorted || *content[step_size] == 1 {
                 // If both subarrays are not ready or we already sorted for this range, skip.
                 return;
@@ -410,8 +409,7 @@ mod stress_test {
         const LOGSZ_LO: usize = 10;
         const LOGSZ_HI: usize = 13;
 
-        let (senders, receivers): (Vec<Sender<()>>, Vec<Receiver<()>>) =
-            (0..ITER).map(|_| bounded(1)).unzip();
+        let (senders, receivers): (Vec<Sender<()>>, Vec<Receiver<()>>) = (0..ITER).map(|_| bounded(1)).unzip();
         let mut rng = thread_rng();
 
         for (i, sender) in senders.into_iter().enumerate() {

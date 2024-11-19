@@ -92,10 +92,7 @@ enum Primary {
 
 impl AbstractSyntaxTreeNode for Primary {
     fn parse(primary: Pair<'_, Rule>) -> Self {
-        assert!(matches!(
-            primary.as_rule(),
-            Rule::Assertion | Rule::atom | Rule::expr
-        ));
+        assert!(matches!(primary.as_rule(), Rule::Assertion | Rule::atom | Rule::expr));
 
         match primary.as_rule() {
             Rule::Assertion => Self::Assertion(Box::new(Assertion::parse(primary))),
@@ -134,14 +131,8 @@ mod tests {
     #[test]
     fn test_expr() {
         let test_strings = [
-            (
-                "-~1 ||  -~2 - -~3 &(-~4 ||    -~5)",
-                "-~1 || -~2 - -~3 & (-~4 || -~5)",
-            ),
-            (
-                "-1 ||  -2 - -3 &(-4 ||    -5)",
-                "-1 || -2 - -3 & (-4 || -5)",
-            ),
+            ("-~1 ||  -~2 - -~3 &(-~4 ||    -~5)", "-~1 || -~2 - -~3 & (-~4 || -~5)"),
+            ("-1 ||  -2 - -3 &(-4 ||    -5)", "-1 || -2 - -3 & (-4 || -5)"),
             ("1 ||  2 - 3 &(4 ||   5)", "1 || 2 - 3 & (4 || 5)"),
             ("( 1 +  2) - 3 &4 ||    5", "(1 + 2) - 3 & 4 || 5"),
             ("1", "1"),
@@ -150,10 +141,7 @@ mod tests {
         ];
 
         for (expr_str, expect) in test_strings {
-            let pair = LinkerScriptParser::parse(Rule::expr, expr_str)
-                .unwrap()
-                .next()
-                .unwrap();
+            let pair = LinkerScriptParser::parse(Rule::expr, expr_str).unwrap().next().unwrap();
             let expr = Expression::parse(pair);
             assert_eq!(expr.to_string(), expect);
         }

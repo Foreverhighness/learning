@@ -196,9 +196,7 @@ pub mod basic {
             Self: 'l;
 
         fn requests(&self) -> Vec<Request> {
-            self.iter()
-                .map(|x| Request::new(CownPtr::clone(x)))
-                .collect()
+            self.iter().map(|x| Request::new(CownPtr::clone(x))).collect()
         }
 
         fn get_mut<'l>(self) -> Self::CownRefs<'l> {
@@ -240,9 +238,7 @@ pub mod basic {
         /// `start_enqueue` can executed parallel, so we need shared ref on behavior
         /// but the self ref may be exclusive?
         fn start_enqueue(&self, behavior: &Behavior) {
-            let prev_req = self
-                .target
-                .last_swap((&raw const *self).cast_mut(), Ordering::Relaxed);
+            let prev_req = self.target.last_swap((&raw const *self).cast_mut(), Ordering::Relaxed);
 
             // SAFETY: `prev_req` must contains valid pointer.
             let Some(prev_req) = (unsafe { prev_req.as_ref() }) else {

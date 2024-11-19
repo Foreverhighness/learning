@@ -26,10 +26,7 @@ fn main() {
 
         debug_assert_eq!(trie.get::<i32>("test-int"), Some(&233));
         debug_assert_eq!(trie.get::<i32>("test-int2"), Some(&2_333_333));
-        debug_assert_eq!(
-            trie.get::<String>("test-string"),
-            Some(&String::from("test"))
-        );
+        debug_assert_eq!(trie.get::<String>("test-string"), Some(&String::from("test")));
         debug_assert_eq!(trie.get::<&str>(""), Some(&"empty-key"));
     }
 

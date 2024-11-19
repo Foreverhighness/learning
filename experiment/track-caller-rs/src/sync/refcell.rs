@@ -18,9 +18,7 @@ pub struct BorrowError {
 
 impl Debug for BorrowError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BorrowError")
-            .field("location", self.location)
-            .finish()
+        f.debug_struct("BorrowError").field("location", self.location).finish()
     }
 }
 
@@ -351,19 +349,18 @@ impl<'b> BorrowRef<'b> {
         if is_reading(b) {
             // Incrementing borrow can result in a reading value (> 0) in these cases:
             // 1. It was = 0, i.e. it wasn't borrowed, and we are taking the first read borrow
-            // 2. It was > 0 and < isize::MAX, i.e. there were read borrows, and isize is large
-            //    enough to represent having one more read borrow
+            // 2. It was > 0 and < isize::MAX, i.e. there were read borrows, and isize is large enough to represent
+            //    having one more read borrow
             borrow.set(b);
             Some(Self { borrow })
         } else {
             // Incrementing borrow can result in a non-reading value (<= 0) in these cases:
-            // 1. It was < 0, i.e. there are writing borrows, so we can't allow a read borrow due to
-            //    Rust's reference aliasing rules
-            // 2. It was isize::MAX (the max amount of reading borrows) and it overflowed into
-            //    isize::MIN (the max amount of writing borrows) so we can't allow an additional
-            //    read borrow because isize can't represent so many read borrows (this can only
-            //    happen if you mem::forget more than a small constant amount of `Ref`s, which is
-            //    not good practice)
+            // 1. It was < 0, i.e. there are writing borrows, so we can't allow a read borrow due to Rust's reference
+            //    aliasing rules
+            // 2. It was isize::MAX (the max amount of reading borrows) and it overflowed into isize::MIN (the max
+            //    amount of writing borrows) so we can't allow an additional read borrow because isize can't represent
+            //    so many read borrows (this can only happen if you mem::forget more than a small constant amount of
+            //    `Ref`s, which is not good practice)
             None
         }
     }
@@ -389,9 +386,7 @@ impl Clone for BorrowRef<'_> {
         // a writing borrow.
         assert!(borrow != BorrowFlag::MAX);
         self.borrow.set(borrow + 1);
-        BorrowRef {
-            borrow: self.borrow,
-        }
+        BorrowRef { borrow: self.borrow }
     }
 }
 
@@ -588,9 +583,7 @@ impl<'b> BorrowRefMut<'b> {
         // Prevent the borrow counter from underflowing.
         assert!(borrow != BorrowFlag::MIN);
         self.borrow.set(borrow - 1);
-        BorrowRefMut {
-            borrow: self.borrow,
-        }
+        BorrowRefMut { borrow: self.borrow }
     }
 }
 
@@ -741,10 +734,7 @@ impl<'b, T: ?Sized> RefMut<'b, T> {
     /// end.copy_from_slice(&[2, 1]);
     /// ```
     #[inline]
-    pub fn map_split<U: ?Sized, V: ?Sized, F>(
-        mut orig: Self,
-        f: F,
-    ) -> (RefMut<'b, U>, RefMut<'b, V>)
+    pub fn map_split<U: ?Sized, V: ?Sized, F>(mut orig: Self, f: F) -> (RefMut<'b, U>, RefMut<'b, V>)
     where
         F: FnOnce(&mut T) -> (&mut U, &mut V),
     {

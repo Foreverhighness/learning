@@ -157,11 +157,7 @@ impl AbstractSyntaxTreeNode for SectionsCommand {
     fn parse(pair: Pair<'_, Rule>) -> Self {
         assert!(matches!(
             pair.as_rule(),
-            Rule::Macro
-                | Rule::Entry
-                | Rule::SymbolAssignment
-                | Rule::Assertion
-                | Rule::OutputSectionDescription
+            Rule::Macro | Rule::Entry | Rule::SymbolAssignment | Rule::Assertion | Rule::OutputSectionDescription
         ));
 
         match pair.as_rule() {
@@ -169,9 +165,7 @@ impl AbstractSyntaxTreeNode for SectionsCommand {
             Rule::Entry => Self::Entry(Entry::parse(pair)),
             Rule::SymbolAssignment => Self::SymbolAssignment(SymbolAssignment::parse(pair)),
             Rule::Assertion => Self::Assertion(Assertion::parse(pair)),
-            Rule::OutputSectionDescription => {
-                Self::OutputSectionDescription(OutputSectionDescription::parse(pair))
-            }
+            Rule::OutputSectionDescription => Self::OutputSectionDescription(OutputSectionDescription::parse(pair)),
             _ => unreachable!(),
         }
     }
@@ -209,10 +203,9 @@ impl AbstractSyntaxTreeNode for OutputSectionDescription {
                 Rule::ident => type_ = Some(String::parse(pair)),
                 Rule::AtAddress => at = Some(String::parse(pair)),
                 Rule::align => align = Some(String::parse(pair)),
-                Rule::Macro
-                | Rule::SymbolAssignment
-                | Rule::OutputSectionData
-                | Rule::InputSectionDescription => commands.push(OutputSectionCommand::parse(pair)),
+                Rule::Macro | Rule::SymbolAssignment | Rule::OutputSectionData | Rule::InputSectionDescription => {
+                    commands.push(OutputSectionCommand::parse(pair));
+                }
                 Rule::OutputSectionPhdr => phdrs.push(String::parse(pair)),
                 Rule::constant => fill_expr = Some(String::parse(pair)),
                 _ => unreachable!(),
@@ -294,19 +287,14 @@ impl AbstractSyntaxTreeNode for OutputSectionCommand {
     fn parse(pair: Pair<'_, Rule>) -> Self {
         assert!(matches!(
             pair.as_rule(),
-            Rule::Macro
-                | Rule::SymbolAssignment
-                | Rule::OutputSectionData
-                | Rule::InputSectionDescription
+            Rule::Macro | Rule::SymbolAssignment | Rule::OutputSectionData | Rule::InputSectionDescription
         ));
 
         match pair.as_rule() {
             Rule::Macro => Self::Macro(Macro::parse(pair)),
             Rule::SymbolAssignment => Self::SymbolAssignment(SymbolAssignment::parse(pair)),
             Rule::OutputSectionData => Self::OutputSectionData(OutputSectionData::parse(pair)),
-            Rule::InputSectionDescription => {
-                Self::InputSectionDescription(InputSectionDescription::parse(pair))
-            }
+            Rule::InputSectionDescription => Self::InputSectionDescription(InputSectionDescription::parse(pair)),
             _ => unreachable!(),
         }
     }

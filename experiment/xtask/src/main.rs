@@ -36,9 +36,7 @@ fn main() -> xshell::Result<()> {
                 // make clean
                 if dir.path().join("Makefile").exists() {
                     let path = dir.path();
-                    cmd!(sh, "make clean --no-print-directory -C {path}")
-                        .quiet()
-                        .run()?;
+                    cmd!(sh, "make clean --no-print-directory -C {path}").quiet().run()?;
                     continue;
                 }
                 // fallback to do nothing

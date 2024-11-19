@@ -46,9 +46,7 @@ fn build_pcre2() -> PathBuf {
         source_dir
     };
 
-    let dst_dir = (cmake::Config::new(source_dir))
-        .build_target(BUILD_TARGET)
-        .build();
+    let dst_dir = (cmake::Config::new(source_dir)).build_target(BUILD_TARGET).build();
 
     let mut build_dir = dst_dir;
     build_dir.push("build");

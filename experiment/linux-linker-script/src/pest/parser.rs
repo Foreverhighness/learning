@@ -14,8 +14,7 @@ pub struct LinkerScriptParser;
 // TODO(fh): better signature design?
 pub fn format(path: impl AsRef<Path>) -> String {
     let path = path.as_ref();
-    let file =
-        std::fs::read_to_string(path).unwrap_or_else(|_| panic!(r#"file "{path:?}" not exist."#));
+    let file = std::fs::read_to_string(path).unwrap_or_else(|_| panic!(r#"file "{path:?}" not exist."#));
     let mut file = match LinkerScriptParser::parse(Rule::LinkerScript, &file) {
         Ok(file) => file,
         Err(e) => {
