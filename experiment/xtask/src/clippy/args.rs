@@ -1,4 +1,100 @@
-enum LintGroup {
+#![allow(unused_variables, reason = "macro may generate unused variable")]
+
+/// <https://doc.rust-lang.org/nightly/nightly-rustc/rustc_lint_defs/struct.Lint.html>
+#[derive(Debug, Clone, Copy)]
+pub struct ClippyLint {
+    name: &'static str,
+    level: Level,
+    reason: Option<&'static str>,
+    group: Option<Group>,
+    applicability: Option<Applicability>,
+}
+
+impl ClippyLint {
+    pub fn compact_arg(&self) -> String {
+        let level = self.level.short_arg();
+        format!("{level}clippy::{}", self.name)
+    }
+
+    pub fn arg(&self) -> String {
+        let level = self.level.short_arg();
+        format!("{level} clippy::{}", self.name)
+    }
+
+    pub fn long_arg(&self) -> String {
+        let level = self.level.long_arg();
+        format!("{level} clippy::{}", self.name)
+    }
+
+    pub fn attr(&self) -> String {
+        let level = self.level.attr();
+        let name = self.name;
+        let reason = self
+            .reason
+            .map(|reason| format!(", reason = {reason}"))
+            .unwrap_or_default();
+        format!("#![{level}(clippy::{name}{reason})")
+    }
+}
+
+impl ClippyLint {
+    const fn new(
+        name: &'static str,
+        level: Level,
+        reason: Option<&'static str>,
+        group: Option<Group>,
+        applicability: Option<Applicability>,
+    ) -> Self {
+        Self {
+            name,
+            level,
+            reason,
+            group,
+            applicability,
+        }
+    }
+}
+
+/// <https://doc.rust-lang.org/nightly/nightly-rustc/rustc_lint_defs/enum.Level.html>
+#[derive(Debug, Clone, Copy)]
+enum Level {
+    Allow,
+    Warn,
+    Deny,
+    Forbid,
+}
+
+impl Level {
+    fn short_arg(self) -> &'static str {
+        match self {
+            Level::Allow => "-A",
+            Level::Warn => "-W",
+            Level::Deny => "-D",
+            Level::Forbid => "-F",
+        }
+    }
+
+    fn long_arg(self) -> &'static str {
+        match self {
+            Level::Allow => "--allow",
+            Level::Warn => "--warn",
+            Level::Deny => "--deny",
+            Level::Forbid => "--forbid",
+        }
+    }
+
+    fn attr(self) -> &'static str {
+        match self {
+            Level::Allow => "allow",
+            Level::Warn => "warn",
+            Level::Deny => "deny",
+            Level::Forbid => "forbid",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Group {
     Cargo,
     Complexity,
     Correctness,
@@ -10,7 +106,8 @@ enum LintGroup {
     Suspicious,
 }
 
-enum LintApplicability {
+#[derive(Debug, Clone, Copy)]
+enum Applicability {
     MachineApplicable,
     MaybeIncorrect,
     HasPlaceholders,
@@ -24,9 +121,18 @@ macro_rules! allow {
         $(,reason = $reason:literal)?
         $(,)?
     ) => {{
-        $(let _ = LintGroup::$g;)*
-        $(let _ = LintApplicability::$a;)*
-        concat!("-A", "clippy::", $lint)
+        let name = $lint;
+
+        let reason = None::<&'static str>;
+        let g = None::<Group>;
+        let a = None::<Applicability>;
+
+        $(let reason = Some($reason);)*
+        $(let g = Some(Group::$g);)*
+        $(let a = Some(Applicability::$a);)*
+
+        ClippyLint::new(name, Level::Allow, reason, g, a)
+        // concat!("-A", "clippy::", $lint)
     }};
 }
 
@@ -37,9 +143,18 @@ macro_rules! warn {
         $(,reason = $reason:literal)?
         $(,)?
     ) => {{
-        $(let _ = LintGroup::$g;)*
-        $(let _ = LintApplicability::$a;)*
-        concat!("-W", "clippy::", $lint)
+        let name = $lint;
+
+        let reason = None::<&'static str>;
+        let g = None::<Group>;
+        let a = None::<Applicability>;
+
+        $(let reason = Some($reason);)*
+        $(let g = Some(Group::$g);)*
+        $(let a = Some(Applicability::$a);)*
+
+        ClippyLint::new(name, Level::Allow, reason, g, a)
+        // concat!("-W", "clippy::", $lint)
     }};
 }
 
@@ -50,13 +165,22 @@ macro_rules! deny {
         $(,reason = $reason:literal)?
         $(,)?
     ) => {{
-        $(let _ = LintGroup::$g;)*
-        $(let _ = LintApplicability::$a;)*
-        concat!("-D", "clippy::", $lint)
+        let name = $lint;
+
+        let reason = None::<&'static str>;
+        let g = None::<Group>;
+        let a = None::<Applicability>;
+
+        $(let reason = Some($reason);)*
+        $(let g = Some(Group::$g);)*
+        $(let a = Some(Applicability::$a);)*
+
+        ClippyLint::new(name, Level::Allow, reason, g, a)
+        // concat!("-D", "clippy::", $lint)
     }};
 }
 
-pub const CLIPPY_ARGS: &[&str] =
+pub const CLIPPY_LINTS: &[ClippyLint] =
     &[
         deny!(
             "all",
