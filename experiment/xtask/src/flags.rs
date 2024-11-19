@@ -25,7 +25,14 @@ xflags::xflags! {
 
             /// Export lints for cli, cargo, header
             cmd export {
-                default cmd cli {}
+                default cmd cli {
+                    /// Use compact args, like `-Aclippy::all`
+                    optional -c, --compact
+                    /// Use long args, like `--allow`, `--warn`, `--deny`, override compact
+                    optional -w, --wide
+                    /// Use line break to list args
+                    optional -l, --list
+                }
                 cmd cargo {}
                 cmd attr {}
             }
@@ -83,7 +90,11 @@ pub enum ExportCmd {
 }
 
 #[derive(Debug)]
-pub struct Cli;
+pub struct Cli {
+    pub compact: bool,
+    pub wide: bool,
+    pub list: bool,
+}
 
 #[derive(Debug)]
 pub struct Cargo;

@@ -17,10 +17,15 @@ impl ClippyLint {
         format!("{level}clippy::{name}")
     }
 
-    pub fn arg(&self) -> String {
-        let level = self.level.short_arg();
+    pub fn arg(&self, compact: bool, long_arg: bool) -> String {
+        let level = if long_arg {
+            self.level.long_arg()
+        } else {
+            self.level.short_arg()
+        };
         let name = self.name;
-        format!("{level} clippy::{name}")
+        let space = if compact && !long_arg { "" } else { " " };
+        format!("{level}{space}clippy::{name}")
     }
 
     pub fn long_arg(&self) -> String {

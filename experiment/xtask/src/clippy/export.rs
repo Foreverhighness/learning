@@ -14,9 +14,12 @@ impl Command for Export {
 
 impl Command for Cli {
     fn cmd(self, _: &xshell::Shell) -> xshell::Result<Option<xshell::Cmd>> {
-        println!("cargo clippy --");
-        for arg in CLIPPY_LINTS.iter().map(super::args::ClippyLint::compact_arg) {
-            print!(" {arg}");
+        let compact = self.compact;
+        let long_arg = self.wide;
+        let sep = if self.list { " \\\n    " } else { "" };
+        print!("cargo clippy --");
+        for arg in CLIPPY_LINTS.iter().map(|lint| lint.arg(compact, long_arg)) {
+            print!("{sep}{arg}");
         }
         println!();
         Ok(None)
