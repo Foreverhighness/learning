@@ -13,27 +13,36 @@ pub struct ClippyLint {
 impl ClippyLint {
     pub fn compact_arg(&self) -> String {
         let level = self.level.short_arg();
-        format!("{level}clippy::{}", self.name)
+        let name = self.name;
+        format!("{level}clippy::{name}")
     }
 
     pub fn arg(&self) -> String {
         let level = self.level.short_arg();
-        format!("{level} clippy::{}", self.name)
+        let name = self.name;
+        format!("{level} clippy::{name}")
     }
 
     pub fn long_arg(&self) -> String {
         let level = self.level.long_arg();
-        format!("{level} clippy::{}", self.name)
+        let name = self.name;
+        format!("{level} clippy::{name}")
     }
 
     pub fn attr(&self) -> String {
-        let level = self.level.attr();
+        let level = self.level.name();
         let name = self.name;
         let reason = self
             .reason
-            .map(|reason| format!(", reason = {reason}"))
+            .map(|reason| format!(r#", reason = "{reason}""#))
             .unwrap_or_default();
         format!("#![{level}(clippy::{name}{reason})")
+    }
+
+    pub fn toml_item(&self) -> String {
+        let level = self.level.name();
+        let name = self.name;
+        format!(r#"{name} = "{level}""#)
     }
 }
 
@@ -65,30 +74,30 @@ enum Level {
 }
 
 impl Level {
-    fn short_arg(self) -> &'static str {
+    const fn short_arg(self) -> &'static str {
         match self {
-            Level::Allow => "-A",
-            Level::Warn => "-W",
-            Level::Deny => "-D",
-            Level::Forbid => "-F",
+            Self::Allow => "-A",
+            Self::Warn => "-W",
+            Self::Deny => "-D",
+            Self::Forbid => "-F",
         }
     }
 
-    fn long_arg(self) -> &'static str {
+    const fn long_arg(self) -> &'static str {
         match self {
-            Level::Allow => "--allow",
-            Level::Warn => "--warn",
-            Level::Deny => "--deny",
-            Level::Forbid => "--forbid",
+            Self::Allow => "--allow",
+            Self::Warn => "--warn",
+            Self::Deny => "--deny",
+            Self::Forbid => "--forbid",
         }
     }
 
-    fn attr(self) -> &'static str {
+    const fn name(self) -> &'static str {
         match self {
-            Level::Allow => "allow",
-            Level::Warn => "warn",
-            Level::Deny => "deny",
-            Level::Forbid => "forbid",
+            Self::Allow => "allow",
+            Self::Warn => "warn",
+            Self::Deny => "deny",
+            Self::Forbid => "forbid",
         }
     }
 }
@@ -153,7 +162,7 @@ macro_rules! warn {
         $(let g = Some(Group::$g);)*
         $(let a = Some(Applicability::$a);)*
 
-        ClippyLint::new(name, Level::Allow, reason, g, a)
+        ClippyLint::new(name, Level::Warn, reason, g, a)
         // concat!("-W", "clippy::", $lint)
     }};
 }
@@ -175,7 +184,7 @@ macro_rules! deny {
         $(let g = Some(Group::$g);)*
         $(let a = Some(Applicability::$a);)*
 
-        ClippyLint::new(name, Level::Allow, reason, g, a)
+        ClippyLint::new(name, Level::Deny, reason, g, a)
         // concat!("-D", "clippy::", $lint)
     }};
 }

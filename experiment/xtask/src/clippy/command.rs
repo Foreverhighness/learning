@@ -1,6 +1,6 @@
 use xshell::{cmd, Cmd};
 
-use super::args::CLIPPY_LINTS;
+use super::args::{ClippyLint, CLIPPY_LINTS};
 use crate::flags::{Clippy, Fix, Run};
 use crate::Command;
 
@@ -16,7 +16,7 @@ impl Command for Clippy {
 
 impl Command for Run {
     fn cmd(self, sh: &xshell::Shell) -> xshell::Result<Option<Cmd>> {
-        let args = CLIPPY_LINTS.iter().map(|lint| lint.compact_arg());
+        let args = CLIPPY_LINTS.iter().map(ClippyLint::compact_arg);
         Ok(Some(cmd!(sh, "cargo clippy -- {args...}")))
     }
 }
@@ -29,7 +29,7 @@ impl Command for Fix {
             .then_some(&["--allow-no-vcs", "--allow-dirty", "--allow-staged"])
             .into_iter()
             .flatten();
-        let args = CLIPPY_LINTS.iter().map(|lint| lint.compact_arg());
+        let args = CLIPPY_LINTS.iter().map(ClippyLint::compact_arg);
         Ok(Some(cmd!(sh, "cargo clippy --fix {force...} -- {args...}")))
     }
 }
