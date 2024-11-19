@@ -11,15 +11,15 @@ mod boc_fibonacci {
         } else if n == 1 {
             CownPtr::new(1)
         } else {
-            let prev = fibonacci_inner(n - 1, None);
-            let pprev = fibonacci_inner(n - 2, None);
-            when!(prev, pprev; g1, g2; {
+            let prev1 = fibonacci_inner(n - 1, None);
+            let prev2 = fibonacci_inner(n - 2, None);
+            when!(prev1, prev2; g1, g2; {
                 *g1 += *g2;
-                if let Some(sender) = &sender {
+                if let Some(sender) = sender.as_ref() {
                     sender.send(*g1).unwrap();
                 }
             });
-            return prev;
+            return prev1;
         }
     }
 
@@ -220,30 +220,30 @@ mod basic_test {
             let c_sent_t1 = CownPtr::new(false);
             let c_sent_t2 = c_sent_t1.clone();
             let msg_t1 = Arc::new(AtomicUsize::new(0));
-            let msg_t2 = msg_t1.clone();
-            let msg_t3 = msg_t1.clone();
+            let msg_t2 = Arc::clone(&msg_t1);
+            let msg_t3 = Arc::clone(&msg_t1);
 
             let (send1, recv1) = bounded(1);
             let (send2, recv2) = bounded(1);
 
             runtime::spawn(move || {
                 when!(c_sent_t1; sent; {
-                    if !*sent {
+                    if *sent {
+                        assert_eq!(1, msg_t1.load(Ordering::Relaxed));
+                    } else {
                         msg_t1.fetch_add(1, Ordering::Relaxed);
                         *sent = true;
-                    } else {
-                        assert_eq!(1, msg_t1.load(Ordering::Relaxed));
                     }
                     send1.send(()).unwrap();
                 });
             });
             runtime::spawn(move || {
                 when!(c_sent_t2; sent; {
-                    if !*sent {
+                    if *sent {
+                        assert_eq!(1, msg_t2.load(Ordering::Relaxed));
+                    } else {
                         msg_t2.fetch_add(1, Ordering::Relaxed);
                         *sent = true;
-                    } else {
-                        assert_eq!(1, msg_t2.load(Ordering::Relaxed));
                     }
                     send2.send(()).unwrap();
                 });
@@ -264,8 +264,8 @@ mod basic_test {
             let c_flag1_t2 = c_flag1_t1.clone();
             let c_flag2_t2 = c_flag2_t1.clone();
             let msg_t1 = Arc::new(AtomicUsize::new(0));
-            let msg_t2 = msg_t1.clone();
-            let msg_t3 = msg_t1.clone();
+            let msg_t2 = Arc::clone(&msg_t1);
+            let msg_t3 = Arc::clone(&msg_t1);
 
             let (send_t1, recv) = bounded(0);
             let send_t2 = send_t1.clone();
@@ -384,7 +384,7 @@ mod stress_test {
         let (send_finish, recv_finish) = bounded(0);
 
         runtime::spawn(move || {
-            assert_eq!(boc_fibonacci::fibonacci(28), 317811);
+            assert_eq!(boc_fibonacci::fibonacci(28), 317_811);
             send_finish.send(()).unwrap();
         });
 
@@ -396,7 +396,7 @@ mod stress_test {
         let (send_finish, recv_finish) = bounded(0);
 
         runtime::spawn(move || {
-            boc_banking::run_transactions(1234, 100000, false);
+            boc_banking::run_transactions(1234, 100_000, false);
             send_finish.send(()).unwrap();
         });
 
