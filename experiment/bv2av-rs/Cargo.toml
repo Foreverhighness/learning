@@ -1,0 +1,8 @@
+[package]
+name = "bv2av"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+xflags = "0.3.2"
+abv = { git = "https://github.com/Colerar/abv.git" }

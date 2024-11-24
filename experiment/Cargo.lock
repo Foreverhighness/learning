@@ -3,6 +3,14 @@
 version = 4
 
 [[package]]
+name = "abv"
+version = "0.2.1"
+source = "git+https://github.com/Colerar/abv.git#6c294368ec7437092050dceb81022a32a42e1545"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "anstream"
 version = "0.6.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -88,6 +96,14 @@ dependencies = [
  "crossbeam-channel",
  "rand",
  "rayon",
+]
+
+[[package]]
+name = "bv2av"
+version = "0.1.0"
+dependencies = [
+ "abv",
+ "xflags",
 ]
 
 [[package]]

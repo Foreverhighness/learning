@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "art-rs",
     "boc-rs",
+    "bv2av-rs",
     "cpp-rs-interop",
     "linux-linker-script",
     "pcre-ffi-rs",
