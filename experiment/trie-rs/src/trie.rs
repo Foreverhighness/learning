@@ -77,7 +77,7 @@ impl Trie {
         self.root
             .as_ref()
             .and_then(|init| key.chars().try_fold(init, |cur, ch| cur.children().get(&ch)))
-            .map_or(false, |cur| cur.is_value_node())
+            .is_some_and(|cur| cur.is_value_node())
     }
 }
 
