@@ -1,7 +1,7 @@
 use std::io::{BufWriter, Write};
 
-use art_rs::{PixelGenerator, MAX_COLOR, SCALE_FACTOR as SCALE_FACTOR_U32};
-use clap::{arg, command, Parser};
+use art_rs::{MAX_COLOR, PixelGenerator, SCALE_FACTOR as SCALE_FACTOR_U32};
+use clap::{Parser, arg, command};
 
 const DEFAULT_WIDTH: u16 = 1024;
 const DEFAULT_HEIGHT: u16 = 1024;
@@ -49,7 +49,7 @@ fn main() -> std::io::Result<()> {
 
     let (width, height) = (width as usize, height as usize);
 
-    let mut gen = PixelGenerator::new(width, height, radius as isize, probability, seed);
+    let mut r#gen = PixelGenerator::new(width, height, radius as isize, probability, seed);
 
     let file = std::fs::File::create(path)?;
     let mut file = BufWriter::new(file);
@@ -58,7 +58,7 @@ fn main() -> std::io::Result<()> {
     file.write_all(format!("P6\n{width} {height}\n{MAX_COLOR}\n").as_bytes())?;
     for i in 0..height {
         for j in 0..width {
-            file.write_all(&[gen.red(i, j), gen.green(i, j), gen.blue(i, j)])?;
+            file.write_all(&[r#gen.red(i, j), r#gen.green(i, j), r#gen.blue(i, j)])?;
         }
     }
 

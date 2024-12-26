@@ -75,7 +75,7 @@ impl PixelGenerator {
     fn color(&mut self, i: usize, j: usize, color: usize) -> ColorType {
         if self.colors[color][i][j] == 0 {
             self.colors[color][i][j] = if self.rng.gen_range(0..SCALE_FACTOR) < self.probability {
-                self.rng.gen()
+                self.rng.r#gen()
             } else {
                 let di = self.rng.gen_range(0..=self.radius);
                 let dj = self.rng.gen_range(0..=self.radius);

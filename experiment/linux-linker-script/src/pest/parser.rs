@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use pest::error::LineColLocation;
 use pest::Parser;
+use pest::error::LineColLocation;
 use pest_derive::Parser;
 
 use super::ast::AbstractSyntaxTreeNode;

@@ -43,7 +43,7 @@ mod boc_banking {
     use std::thread::sleep;
     use std::time::Duration;
 
-    use rand::{thread_rng, Rng};
+    use rand::{Rng, thread_rng};
 
     use crate::*;
 
@@ -55,7 +55,7 @@ mod boc_banking {
 
         let mut rng = thread_rng();
         let accounts = (0..account_cnt)
-            .map(|_| CownPtr::new(rng.gen::<usize>()))
+            .map(|_| CownPtr::new(rng.r#gen::<usize>()))
             .collect::<Box<_>>();
 
         let c_remaining = CownPtr::new(transaction_cnt);
@@ -73,7 +73,7 @@ mod boc_banking {
             }
 
             let amount = rng.gen_range(0..TRANSFER_LIMIT);
-            let random_sleep = use_sleep && rng.gen();
+            let random_sleep = use_sleep && rng.r#gen();
 
             let c_src = accounts[src].clone();
             let c_dst = accounts[dst].clone();
@@ -208,8 +208,8 @@ mod boc_merge_sort {
 }
 
 mod basic_test {
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     use super::*;
     use crate::*;
@@ -374,7 +374,7 @@ mod basic_test {
 }
 
 mod stress_test {
-    use rand::{thread_rng, Rng};
+    use rand::{Rng, thread_rng};
 
     use super::*;
     use crate::*;
@@ -415,7 +415,7 @@ mod stress_test {
         for (i, sender) in senders.into_iter().enumerate() {
             let logsize = LOGSZ_LO + i % (LOGSZ_HI - LOGSZ_LO);
             let len = 1 << logsize;
-            let mut arr = (0..len).map(|_| rng.gen()).collect::<Vec<_>>();
+            let mut arr = (0..len).map(|_| rng.r#gen()).collect::<Vec<_>>();
             runtime::spawn(move || {
                 let res = boc_merge_sort::merge_sort(arr.clone());
                 arr.sort_unstable();

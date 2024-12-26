@@ -11,7 +11,7 @@ pub struct UserC {
 ///
 /// panic if `comment` is not a valid utf8 string
 #[expect(clippy::not_unsafe_ptr_arg_deref, reason = "for testing")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn Rust_write_comment(user: &mut UserC, comment: *const u8, comment_len: usize) {
     // SAFETY: Caller guarantee safety
     let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };

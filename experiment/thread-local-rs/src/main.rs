@@ -36,7 +36,7 @@ fn sum_rust_const() -> u32 {
 }
 
 fn with_c_counter<T>(f: impl FnOnce(&Cell<u32>) -> T) -> T {
-    extern "C" {
+    unsafe extern "C" {
         fn get_thread_local() -> *mut u32;
     }
     let counter = unsafe { get_thread_local() };
@@ -119,7 +119,9 @@ fn main() {
         let cell: Box<Cell<u32>> = Box::new(Cell::new(0u32));
         let cell = Box::into_raw(cell);
         unsafe extern "C" fn free(ptr: *mut libc::c_void) {
-            let _: Box<Cell<u32>> = Box::from_raw(ptr.cast());
+            unsafe {
+                let _: Box<Cell<u32>> = Box::from_raw(ptr.cast());
+            }
         }
         unsafe { libc::pthread_key_create(KEY.get(), Some(free)) };
         let key = unsafe { *KEY.get() };

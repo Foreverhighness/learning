@@ -12,3 +12,6 @@ members = [
     "trie-rs",
     "xtask",
 ]
+
+[workspace.package]
+edition = "2024"

@@ -1,6 +1,6 @@
 #![allow(non_camel_case_types, reason = "FFI")]
 #![allow(non_snake_case, reason = "FFI")]
-use std::ffi::{c_void, CString};
+use std::ffi::{CString, c_void};
 use std::io::BufRead;
 use std::os::raw::{c_int, c_uchar};
 
@@ -13,7 +13,7 @@ type PCRE2_SPTR = *const c_uchar;
 type PCRE2_SIZE = usize;
 
 #[link(name = "pcre2-8")]
-extern "C" {
+unsafe extern "C" {
     fn pcre2_compile_8(
         pattern: PCRE2_SPTR,
         length: PCRE2_SIZE,

@@ -1,8 +1,8 @@
-use xshell::{cmd, Cmd};
+use xshell::{Cmd, cmd};
 
-use super::args::{ClippyLint, CLIPPY_LINTS};
-use crate::flags::{Clippy, Fix, Run};
+use super::args::{CLIPPY_LINTS, ClippyLint};
 use crate::Command;
+use crate::flags::{Clippy, Fix, Run};
 
 impl Command for Clippy {
     fn cmd(self, sh: &xshell::Shell) -> xshell::Result<Option<Cmd>> {

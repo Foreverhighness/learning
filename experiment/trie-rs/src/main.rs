@@ -4,8 +4,8 @@ mod trie;
 mod trie_node;
 mod trie_store;
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use trie::Trie;
 use trie_store::TrieStore;

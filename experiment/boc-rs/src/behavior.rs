@@ -431,16 +431,16 @@ pub mod basic {
         ($i:ident, $($e:ident),*,) => ( ($i, $crate::tuple_list!($($e),*)) );
 
         // handling complex expressions
-        ($i:expr)  => ( ($i, ()) );
-        ($i:expr,) => ( ($i, ()) );
-        ($i:expr, $($e:expr),*)  => ( ($i, $crate::tuple_list!($($e),*)) );
-        ($i:expr, $($e:expr),*,) => ( ($i, $crate::tuple_list!($($e),*)) );
+        ($i:expr_2021)  => ( ($i, ()) );
+        ($i:expr_2021,) => ( ($i, ()) );
+        ($i:expr_2021, $($e:expr_2021),*)  => ( ($i, $crate::tuple_list!($($e),*)) );
+        ($i:expr_2021, $($e:expr_2021),*,) => ( ($i, $crate::tuple_list!($($e),*)) );
     }
 
     /// "When" block.
     #[macro_export]
     macro_rules! when {
-        ( $( $cs:ident ),* ; $( $gs:ident ),* ; $thunk:expr ) => {{
+        ( $( $cs:ident ),* ; $( $gs:ident ),* ; $thunk:expr_2021 ) => {{
             run_when($crate::tuple_list!($($cs.clone()),*), move |$crate::tuple_list!($($gs),*)| $thunk);
         }};
     }

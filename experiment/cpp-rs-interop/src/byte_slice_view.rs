@@ -10,7 +10,7 @@ pub struct ByteSliceView {
 ///
 /// panic if `comment` or `name` are not valid utf8 strings
 #[expect(clippy::not_unsafe_ptr_arg_deref, reason = "for testing")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn Rust_write_comment_with_ByteSliceView(
     user: &mut UserC,
     comment: *const u8,

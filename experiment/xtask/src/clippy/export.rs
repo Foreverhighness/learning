@@ -1,6 +1,6 @@
-use crate::clippy::args::{ClippyLint, CLIPPY_LINTS};
-use crate::flags::{Attr, Cargo, Cli, Export};
 use crate::Command;
+use crate::clippy::args::{CLIPPY_LINTS, ClippyLint};
+use crate::flags::{Attr, Cargo, Cli, Export};
 
 impl Command for Export {
     fn cmd(self, sh: &xshell::Shell) -> xshell::Result<Option<xshell::Cmd>> {

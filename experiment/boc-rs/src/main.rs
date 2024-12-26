@@ -3,9 +3,9 @@
 #[cfg(not(feature = "rayon"))]
 use std::thread as runtime;
 
-use behavior::basic::{run_when, CownPtr};
-use crossbeam_channel::{bounded, Receiver, Sender};
-use rand::{thread_rng, Rng};
+use behavior::basic::{CownPtr, run_when};
+use crossbeam_channel::{Receiver, Sender, bounded};
+use rand::{Rng, thread_rng};
 #[cfg(feature = "rayon")]
 use rayon as runtime;
 
@@ -25,7 +25,7 @@ fn main() {
     for (i, sender) in senders.into_iter().enumerate() {
         let logsize = LOGSZ_LO + i % (LOGSZ_HI - LOGSZ_LO);
         let len = 1 << logsize;
-        let mut arr = (0..len).map(|_| rng.gen()).collect::<Vec<_>>();
+        let mut arr = (0..len).map(|_| rng.r#gen()).collect::<Vec<_>>();
         runtime::spawn(move || {
             let res = merge_sort(arr.clone());
             arr.sort_unstable();
