@@ -41,7 +41,7 @@ impl ClippyLint {
             .reason
             .map(|reason| format!(r#", reason = "{reason}""#))
             .unwrap_or_default();
-        format!("#![{level}(clippy::{name}{reason})")
+        format!("#![{level}(clippy::{name}{reason})]")
     }
 
     pub fn toml_item(&self) -> String {

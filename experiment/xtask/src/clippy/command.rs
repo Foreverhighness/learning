@@ -26,7 +26,7 @@ impl Command for Fix {
         // https://github.com/matklad/xshell/issues/34
         let force = self
             .force
-            .then_some(&["--allow-no-vcs", "--allow-dirty", "--allow-staged"])
+            .then_some(["--allow-no-vcs", "--allow-dirty", "--allow-staged"])
             .into_iter()
             .flatten();
         let args = CLIPPY_LINTS.iter().map(ClippyLint::compact_arg);
