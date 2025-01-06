@@ -17,12 +17,13 @@ const LIB_NAME: &str = "libpcre2-8";
 const BUILD_TARGET: &str = "pcre2-8-static";
 
 fn main() {
-    if pkg_config::Config::new()
+    let build_from_src = option_env!("PCRE_BUILD_FROM_SOURCE").is_some_and(|s| s == "1");
+    let pcre_not_found = pkg_config::Config::new()
         .statik(true)
         .atleast_version(VERSION)
         .probe(LIB_NAME)
-        .is_err()
-    {
+        .is_err();
+    if build_from_src || pcre_not_found {
         let build_dir = build_pcre2();
         println!("cargo:rustc-link-search=native={}", build_dir.display());
         println!("cargo:rustc-link-lib=static={LIB_BASENAME}");
