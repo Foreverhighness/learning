@@ -1,5 +1,5 @@
 [package]
-name = "trie-rs"
+name = "trie"
 version = "0.1.0"
 edition.workspace = true
 

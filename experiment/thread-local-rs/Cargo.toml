@@ -1,5 +1,5 @@
 [package]
-name = "thread-local-rs"
+name = "thread-local"
 description = "experiment from https://matklad.github.io/2020/10/03/fast-thread-locals-in-rust.html"
 version = "0.1.0"
 edition.workspace = true
@@ -7,4 +7,4 @@ edition.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libc = "0.2.152"
+libc = "0.2"

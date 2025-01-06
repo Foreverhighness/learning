@@ -1,6 +1,6 @@
 use std::io::{BufWriter, Write};
 
-use art_rs::{MAX_COLOR, PixelGenerator, SCALE_FACTOR as SCALE_FACTOR_U32};
+use art::{MAX_COLOR, PixelGenerator, SCALE_FACTOR as SCALE_FACTOR_U32};
 use clap::{Parser, arg, command};
 
 const DEFAULT_WIDTH: u16 = 1024;
