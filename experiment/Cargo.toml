@@ -6,6 +6,7 @@ members = [
     "bv2av-rs",
     "cpp-rs-interop",
     "linux-linker-script",
+    "lock-ordering-rs",
     "pcre-ffi-rs",
     "thread-local-rs",
     "track-caller-rs",
