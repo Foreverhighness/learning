@@ -5,6 +5,7 @@ members = [
     "boc-rs",
     "bv2av-rs",
     "cpp-rs-interop",
+    "ld-preload-rs",
     "linux-linker-script",
     "lock-ordering-rs",
     "pcre-ffi-rs",
