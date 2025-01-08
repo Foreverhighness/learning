@@ -11,12 +11,41 @@ pub struct ClippyLint {
 }
 
 impl ClippyLint {
+    /// Returns a compact argument string for the Clippy lint.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let lint = ClippyLint::new("pattern_type_mismatch", Level::Deny, None, None, None);
+    /// let arg = lint.compact_arg();
+    /// assert_eq!(arg, "-Dclippy::pattern_type_mismatch");
+    /// ```
     pub fn compact_arg(&self) -> String {
         let level = self.level.short_arg();
         let name = self.name;
         format!("{level}clippy::{name}")
     }
 
+    /// Returns an argument string for the Clippy lint.
+    ///
+    /// # Parameters
+    ///
+    /// - `compact`: If true, the argument will be compact.
+    /// - `long_arg`: If true, the argument will use the long format, override compact flag.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let lint = ClippyLint::new("pattern_type_mismatch", Level::Deny, None, None, None);
+    /// let arg = lint.arg(false, false);
+    /// assert_eq!(arg, "-D clippy::pattern_type_mismatch");
+    /// let arg = lint.arg(false, true);
+    /// assert_eq!(arg, "--deny clippy::pattern_type_mismatch");
+    /// let arg = lint.arg(true, false);
+    /// assert_eq!(arg, "-Dclippy::pattern_type_mismatch");
+    /// let arg = lint.arg(true, true);
+    /// assert_eq!(arg, "--deny clippy::pattern_type_mismatch");
+    /// ```
     pub fn arg(&self, compact: bool, long_arg: bool) -> String {
         let level = if long_arg {
             self.level.long_arg()
@@ -28,12 +57,39 @@ impl ClippyLint {
         format!("{level}{space}clippy::{name}")
     }
 
+    /// Returns a long argument string for the Clippy lint.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let lint = ClippyLint::new("pattern_type_mismatch", Level::Deny, None, None, None);
+    /// let arg = lint.long_arg();
+    /// assert_eq!(arg, "--deny clippy::pattern_type_mismatch");
+    /// ```
     pub fn long_arg(&self) -> String {
         let level = self.level.long_arg();
         let name = self.name;
         format!("{level} clippy::{name}")
     }
 
+    /// Returns an attribute string for the Clippy lint.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let lint = ClippyLint::new(
+    ///     "pattern_type_mismatch",
+    ///     Level::Deny,
+    ///     Some("some reason"),
+    ///     None,
+    ///     None,
+    /// );
+    /// let arg = lint.attr();
+    /// assert_eq!(
+    ///     arg,
+    ///     r##"#![deny(pattern_type_mismatch, reason = "some reason")]"##
+    /// );
+    /// ```
     pub fn attr(&self) -> String {
         let level = self.level.name();
         let name = self.name;
@@ -44,10 +100,61 @@ impl ClippyLint {
         format!("#![{level}(clippy::{name}{reason})]")
     }
 
+    /// Returns a TOML item string for the Clippy lint.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let lint = ClippyLint::new("pattern_type_mismatch", Level::Deny, None, None, None);
+    /// let arg = lint.toml_item();
+    /// assert_eq!(arg, r#"pattern_type_mismatch = "deny""#);
+    /// ```
     pub fn toml_item(&self) -> String {
         let level = self.level.name();
         let name = self.name;
         format!(r#"{name} = "{level}""#)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compact_arg() {
+        let lint = ClippyLint::new("pattern_type_mismatch", Level::Deny, None, None, None);
+        let arg = lint.compact_arg();
+        assert_eq!(arg, "-Dclippy::pattern_type_mismatch");
+    }
+
+    #[test]
+    fn test_arg() {
+        let lint = ClippyLint::new("pattern_type_mismatch", Level::Deny, None, None, None);
+        let arg = lint.arg(false, false);
+        assert_eq!(arg, "-D clippy::pattern_type_mismatch");
+        let arg = lint.arg(false, true);
+        assert_eq!(arg, "--deny clippy::pattern_type_mismatch");
+        let arg = lint.arg(true, false);
+        assert_eq!(arg, "-Dclippy::pattern_type_mismatch");
+        let arg = lint.arg(true, true);
+        assert_eq!(arg, "--deny clippy::pattern_type_mismatch");
+    }
+
+    #[test]
+    fn test_attr() {
+        let lint = ClippyLint::new("pattern_type_mismatch", Level::Deny, Some("some reason"), None, None);
+        let arg = lint.attr();
+        assert_eq!(
+            arg,
+            r##"#![deny(clippy::pattern_type_mismatch, reason = "some reason")]"##
+        );
+    }
+
+    #[test]
+    fn test_toml_item() {
+        let lint = ClippyLint::new("pattern_type_mismatch", Level::Deny, None, None, None);
+        let arg = lint.toml_item();
+        assert_eq!(arg, r#"pattern_type_mismatch = "deny""#);
     }
 }
 

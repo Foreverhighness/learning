@@ -12,13 +12,14 @@ impl Command for Clean {
             .filter_entry(|entry| entry.file_type().is_dir())
             .filter_map(Result::ok)
         {
-            // make clean
-            if dir.path().join("Makefile").exists() {
-                let path = dir.path();
-                cmd!(sh, "make clean --no-print-directory -C {path}").quiet().run()?;
+            if !dir.path().join("Makefile").exists() {
+                // Makefile not exist, do nothing
                 continue;
             }
-            // fallback to do nothing
+
+            // make clean
+            let path = dir.path();
+            cmd!(sh, "make clean --no-print-directory -C {path}").quiet().run()?;
         }
 
         // cargo clean at workspace
