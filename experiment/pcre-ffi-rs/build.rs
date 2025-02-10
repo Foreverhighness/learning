@@ -8,7 +8,7 @@ use tar::Archive;
 
 const DOWNLOAD_BASE_URL: &str = "https://github.com/PCRE2Project/pcre2/releases/download";
 const PCRE2: &str = "pcre2";
-const VERSION: &str = "10.42";
+const LEAST_VERSION: &str = "10.30";
 const PCRE2_PATH: &str = "pcre2-10.42";
 const SHA256: &str = "8d36cd8cb6ea2a4c2bb358ff6411b0c788633a2a45dabbf1aeb4b701d1b5e840";
 
@@ -20,7 +20,7 @@ fn main() {
     let build_from_src = option_env!("PCRE_BUILD_FROM_SOURCE").is_some_and(|s| s == "1");
     let pcre_not_found = pkg_config::Config::new()
         .statik(true)
-        .atleast_version(VERSION)
+        .atleast_version(LEAST_VERSION)
         .probe(LIB_NAME)
         .is_err();
     if build_from_src || pcre_not_found {
