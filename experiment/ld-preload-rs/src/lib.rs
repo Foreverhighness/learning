@@ -1,5 +1,6 @@
 use core::ffi::c_int;
 
+#[must_use]
 #[unsafe(export_name = "add")]
 pub extern "C" fn add(left: c_int, right: c_int) -> c_int {
     println!("calling in rust");
