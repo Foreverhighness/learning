@@ -55,11 +55,12 @@ __global__ void pipeline_kernel_async(T *global, uint64_t *clock,
 }
 
 template <typename T>
-void run_test(size_t copy_count = 16) {
+void run_test() {
   T *global;
   uint64_t *clock;
 
   int block_size = 32;
+  size_t copy_count = size / (sizeof(T) * block_size);
 
   std::cout << "Type size: " << sizeof(T) << " bytes" << std::endl;
   std::cout << "Block size: " << block_size << ", Copy count: " << copy_count
@@ -78,7 +79,7 @@ void run_test(size_t copy_count = 16) {
 
   uint64_t sync_cycles;
   CUDA_CHECK(cudaMemcpyAsync(&sync_cycles, clock, sizeof(uint64_t),
-                        cudaMemcpyDeviceToHost));
+                             cudaMemcpyDeviceToHost));
   CUDA_CHECK(cudaMemsetAsync(clock, 0, sizeof(uint64_t)));
   cudaDeviceSynchronize();
 
@@ -86,7 +87,7 @@ void run_test(size_t copy_count = 16) {
   CUDA_CHECK(cudaGetLastError());
   uint64_t async_cycles;
   CUDA_CHECK(cudaMemcpyAsync(&async_cycles, clock, sizeof(uint64_t),
-                        cudaMemcpyDeviceToHost));
+                             cudaMemcpyDeviceToHost));
   CUDA_CHECK(cudaMemsetAsync(clock, 0, sizeof(uint64_t)));
   cudaDeviceSynchronize();
 
@@ -100,9 +101,8 @@ void run_test(size_t copy_count = 16) {
 }
 
 int main(void) {
-  // run_test<uint8_t>();
-  // run_test<uint16_t>();
-  run_test<uint32_t>();
-  run_test<uint64_t>();
+  run_test<int>();
+  run_test<int2>();
+  run_test<int4>();
   return 0;
 }
