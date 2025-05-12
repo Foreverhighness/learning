@@ -129,7 +129,7 @@ pub fn merge_sort(array: Vec<usize>) -> Vec<usize> {
         when!(c_finished; finished; {
             // Signal that the sorting of subarray for [i, i+1) is finished.
             *finished = 1;
-            merge_sort_inner((n + i) / 2, 2, n, &boc_arr_clone, &boc_finish_clone, &finish_sender);
+            merge_sort_inner(usize::midpoint(n, i), 2, n, &boc_arr_clone, &boc_finish_clone, &finish_sender);
         });
     }
 
