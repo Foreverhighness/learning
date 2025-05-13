@@ -41,7 +41,7 @@ def decode_map(
     q *= scale # scale ops: d
 
     # 主循环处理K/V块
-    split_size: tl.constexpr = tl.cdiv(seq_len, NUM_SPLITS)
+    split_size = tl.cdiv(seq_len, NUM_SPLITS)
     split_start = split_id * split_size
     split_end = tl.minimum(split_start + split_size, seq_len)
     if split_start <= split_end:
