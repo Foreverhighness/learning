@@ -16,45 +16,54 @@ def _fwd_kernel(
     stride_vz: int, stride_vh: int, stride_vk: int, stride_vn: int,
     stride_oz: int, stride_oh: int, stride_om: int, stride_on: int,
     seq_len: int,
-    B_row: tl.constexpr,
-    B_col: tl.constexpr,
+    BLOCK_row: tl.constexpr,
+    BLOCK_col: tl.constexpr,
     d: tl.constexpr,
 ):
     # 程序ID映射
-    i = tl.program_id(0)
-    Q_start = i * B_row
+    id_row = tl.program_id(0)
+    id_head = tl.program_id(1)
+    id_batch = tl.program_id(2)
+
+    Q_start = id_row * BLOCK_row
 
     # 创建偏移量
-    offs_m = Q_start + tl.arange(0, B_row)
-    offs_n = tl.arange(0, B_col)
+    offs_m = Q_start + tl.arange(0, BLOCK_row)
+    offs_n = tl.arange(0, BLOCK_col)
     offs_d = tl.arange(0, d)
 
     # Load Qi ∈ B_row x d
-    q_ptrs = Q + (offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk)
+    q_ptrs = Q + (offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk) + \
+        id_head * stride_qh + id_batch * stride_qz
     q_mask = (offs_m[:, None]) < seq_len
     q_i = tl.load(q_ptrs, mask=q_mask, other=0.0)
 
     # 初始化 Shared Memory 上的变量
-    m_i = tl.full((B_row,), float('-inf'), dtype=tl.float32)
-    l_i = tl.zeros((B_row,), dtype=tl.float32)
-    O_i = tl.zeros((B_row, d), dtype=tl.float32)
+    m_i = tl.full((BLOCK_row,), float('-inf'), dtype=tl.float32)
+    l_i = tl.zeros((BLOCK_row,), dtype=tl.float32)
+    O_i = tl.zeros((BLOCK_row, d), dtype=tl.float32)
 
     scale: tl.constexpr = d ** -0.5
 
     # 主循环处理K/V块
-    for n in range(0, seq_len, B_col):
+    for start_col in range(0, seq_len, BLOCK_col):
         # 计算当前块的边界
-        n_end = n + B_col
-        n_end = tl.minimum(n_end, seq_len)
+        # end_col = start_col + BLOCK_col
+        # end_col = tl.minimum(end_col, seq_len)
+
+        offs_col = start_col + offs_n
+        mask_col = offs_col[:, None] < seq_len
 
         # 加载K块 K_j^T ∈ d x B_col
-        k_ptrs = K + (n + offs_n[:, None]) * stride_kn + offs_d[None, :] * stride_kk
-        k_mask = (n + offs_n[:, None]) < seq_len
+        k_ptrs = K + (start_col + offs_n[:, None]) * stride_kn + offs_d[None, :] * stride_kk + \
+            id_head * stride_kh + id_batch * stride_kz
+        k_mask = mask_col
         k_j = tl.load(k_ptrs, mask=k_mask, other=0.0)
 
         # 加载V块 V_j ∈ B_col x d
-        v_ptrs = V + (n + offs_n[:, None]) * stride_vk + offs_d[None, :] * stride_vn
-        v_mask = (n + offs_n[:, None]) < seq_len
+        v_ptrs = V + (start_col + offs_n[:, None]) * stride_vk + offs_d[None, :] * stride_vn + \
+            id_head * stride_vh + id_batch * stride_vz
+        v_mask = mask_col
         v_j = tl.load(v_ptrs, mask=v_mask, other=0.0)
 
         # 计算 S_ij = Q_i @ K_j^T ∈ B_row x B_col
@@ -81,11 +90,12 @@ def _fwd_kernel(
     O_i = O_i / l_i[:, None]
 
     # backward pass
-    l_ptrs = L + offs_m
-    tl.store(l_ptrs, m_i + tl.log(l_i))
+    # l_ptrs = L + offs_m
+    # tl.store(l_ptrs, m_i + tl.log(l_i))
 
     # 写回输出
-    o_ptrs = Out + (offs_m[:, None] * stride_om + offs_d[None, :] * stride_on)
+    o_ptrs = Out + (offs_m[:, None] * stride_om + offs_d[None, :] * stride_on) + \
+        id_head * stride_oh + id_batch * stride_oz
     tl.store(o_ptrs, O_i.to(Out.dtype.element_ty), mask=q_mask)
 
 def flash_attention_v2(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
@@ -99,7 +109,7 @@ def flash_attention_v2(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> tor
     B_row = 128
     B_col = 64
 
-    grid = (triton.cdiv(seq_len, 128), batch_size * num_heads, 1)
+    grid = (triton.cdiv(seq_len, 128), num_heads, batch_size)
     stride_q = (q.stride(0), q.stride(1), q.stride(2), q.stride(3))
     stride_k = (k.stride(0), k.stride(1), k.stride(2), k.stride(3))
     stride_v = (v.stride(0), v.stride(1), v.stride(2), v.stride(3))
@@ -113,8 +123,8 @@ def flash_attention_v2(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> tor
         *stride_v,
         *stride_out,
         seq_len=seq_len,
-        B_row=B_row,
-        B_col=B_col,
+        BLOCK_row=B_row,
+        BLOCK_col=B_col,
         d=dim,
         num_warps=4,
         num_stages=3,
@@ -131,8 +141,8 @@ if __name__ == "__main__":
     torch.manual_seed(42)
 
     # 创建测试数据
-    batch_size = 1
-    num_heads = 1
+    batch_size = 2
+    num_heads = 8
     seq_len = 512
     dim = 64
 
